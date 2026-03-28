@@ -1,0 +1,59 @@
+BEBERAPA DARI TIM KITA (FLUTTER) YANG KERJA DENGAN TIM WEB
+GAVIN BENJIRO RAMADHAN : BANTU BE WEB
+APRILIANZA TASIK : BANTU AI nya
+BILL STEPHEN + JEANY : BANTU BIKIN WIREFRAME SAMA SI ABDUL JUGA SEKALIAN UNTUK WEB
+
+[10.37, 27/3/2026] athila: p urg kan mau bikin ppt
+[10.37, 27/3/2026] athila: info progress yg sama kelompok sebelah dongs
+[10.37, 27/3/2026] athila: yang ai, wireframe, sama be info progress
+[10.44, 27/3/2026] Bill gates Sembiring: yang ai, wireframe, sama be info progress
+Info utk UI/UX (Wireframe) :
+Blm ada progress karna progress UI/UX bagian web masi blm jg ada progressnya ygy😁😁
+[10.45, 27/3/2026] athila: kata lu mau ngerjain bareng sama si abdul itu, kira² kpn dahh
+[10.45, 27/3/2026] Bill gates Sembiring: kata lu mau ngerjain bareng sama si abdul itu, kira² kpn dahh
+Tgp 28/29, info dr Abdul katanya gitu
+[10.46, 27/3/2026] athila: samperin sun
+[10.46, 27/3/2026] athila: ajak ngopi
+[10.46, 27/3/2026] Bill gates Sembiring: samperin sun
+@Jenny If km samperin, gw orgnya introvert😭😭
+[10.51, 27/3/2026] Jenny If: wkwkwk bareng lah bil
+[11.04, 27/3/2026] Aprilianza Tasik: p urg kan mau bikin ppt
+urang belum chat/dichat si azis wkwkwkw
+[11.04, 27/3/2026] Aprilianza Tasik: itu maksimal kapan til progress report?
+[11.04, 27/3/2026] Aprilianza Tasik: biar nanti urg diskusi dulu
+[11.04, 27/3/2026] athila: hari inii
+[11.04, 27/3/2026] athila: jadi besok jadi ppt.presentasiin ke mas raka
+[11.04, 27/3/2026] Aprilianza Tasik: okeoke
+[11.04, 27/3/2026] athila: ppt nya prompting ae
+[11.04, 27/3/2026] athila: hooh
+[11.08, 27/3/2026] Aprilianza Tasik: Jawaban mas ajis loh ya
+[11.08, 27/3/2026] athila: gblk
+[11.54, 27/3/2026] gavin Topi Ada Tompelnya: be blum ada sih, tpi ntar coba gua tanyain lebih lanjut
+[11.54, 27/3/2026] athila: okehh
+[11.54, 27/3/2026] athila: gacor deks
+[11.54, 27/3/2026] athila: tinggal nunggu ai lah ya wkwk
+[13.03, 27/3/2026] Aprilianza Tasik: kalo misal cuma findings doang gimana til?
+[21.02, 27/3/2026] Aprilianza Tasik: Slide: Opsi Model
+🔹 1. MedGemma 4B (Base Model)
+Model multimodal (image + text) berbasis transformer
+Mampu memahami dan menghasilkan deskripsi dari citra medis
+Bersifat general-purpose (belum spesifik domain tertentu)
+Digunakan sebagai baseline untuk perbandingan performa
+🔹 2. MedGemma 4B (Fine-Tuned Breast Cancer)
+Model hasil fine-tuning dari MedGemma 4B menggunakan dataset mammogram
+Dataset: OMAMA (2D Mammograms + DeepSight Annotations)
+Task: klasifikasi kanker payudara (Cancer vs NonCancer)
+Fine-tuning menggunakan LoRA (parameter-efficient)
+Model telah di-merge → siap untuk inference langsung
+📊 Performa Model:
+Accuracy: 98.88% (+7.28 dari baseline)
+Sensitivity: 99.66% (+16.18 dari baseline)
+Specificity: 98.10%
+F1 Score: 98.88%
+
+Slide: Opsi Deployment
+🔹…
+[21.03, 27/3/2026] Aprilianza Tasik: masukkin ke slide til @athila
+[21.03, 27/3/2026] athila: siap a wkwkw
+[21.37, 27/3/2026] athila: tar dah aing buat pas yang BE itu di share di grup wkwk
+[21.37, 27/3/2026] athila: nanggung
