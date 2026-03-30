@@ -3,6 +3,7 @@
 Aplikasi seluler (*mobile app*) untuk **Lumira AI** - Platform Pendeteksi Kanker Payudara yang terintegrasi dengan teknologi AI MedGemma dan fitur konsultasi *real-time*.
 
 🔗 **Repository Link**: [https://github.com/athilaramdani/lumira-ai-mobile](https://github.com/athilaramdani/lumira-ai-mobile)
+
 🔗 **Figma Link**: [https://www.figma.com/design/NTf8RuJf9CfLON3oPuTr9V/Lumira-AI?node-id=1-1378&t=hIUj5bhRjc1fQKIv-1](https://www.figma.com/design/NTf8RuJf9CfLON3oPuTr9V/Lumira-AI?node-id=1-1378&t=hIUj5bhRjc1fQKIv-1)
 ---
 
