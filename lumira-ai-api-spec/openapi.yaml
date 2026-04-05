@@ -1,0 +1,605 @@
+openapi: 3.0.3
+info:
+  title: Lumira Breast Cancer API Spec
+  description: Comprehensive API documentation covering both the AI prediction service and the Supabase-backed data management endpoints for Doctors, Patients, Medical Records, and statistics.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local AI Server
+  - url: https://api.lumira.ai
+    description: Production Server
+
+tags:
+  - name: Auth
+    description: Authentication endpoints
+  - name: Doctors
+    description: Manage doctors
+  - name: Patients
+    description: Manage patients
+  - name: Medical Records
+    description: Medical records and AI reviews
+  - name: Statistics
+    description: Dashboard and doctor statistics
+  - name: Chat
+    description: Doctor and patient real-time communication
+  - name: MedGemma
+    description: AI chatbot medical consultation
+  - name: AI Service
+    description: AI Prediction endpoints
+
+paths:
+  # ==========================================
+  # AUTHENTICATION
+  # ==========================================
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current logged in user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current user details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+  /api/auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change user password
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Password successfully changed
+        '400':
+          description: Incorrect password
+
+  # ==========================================
+  # DOCTORS
+  # ==========================================
+  /api/doctors:
+    get:
+      tags: [Doctors]
+      summary: Get list of doctors
+      operationId: getDoctors
+      responses:
+        '200':
+          description: List of doctors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags: [Doctors]
+      summary: Add a new doctor
+      operationId: addDoctor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/doctors/{id}:
+    put:
+      tags: [Doctors]
+      summary: Update a doctor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '200':
+          description: Updated successfully
+    delete:
+      tags: [Doctors]
+      summary: Delete a doctor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deleted successfully
+
+  # ==========================================
+  # PATIENTS
+  # ==========================================
+  /api/patients:
+    get:
+      tags: [Patients]
+      summary: Get list of patients
+      operationId: getPatients
+      responses:
+        '200':
+          description: List of patients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PatientListResponse'
+    post:
+      tags: [Patients]
+      summary: Add a new patient
+      operationId: addPatient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+
+  /api/patients/{id}:
+    get:
+      tags: [Patients]
+      summary: Get a specific patient by ID with their records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Patient details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetailResponse'
+    put:
+      tags: [Patients]
+      summary: Update a patient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientRequest'
+      responses:
+        '200':
+          description: Updated efficiently
+    delete:
+      tags: [Patients]
+      summary: Delete a patient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deleted successfully
+
+  # ==========================================
+  # MEDICAL RECORDS & AI
+  # ==========================================
+  /api/medical-records/upload:
+    post:
+      tags: [Medical Records]
+      summary: Upload a medical record image and trigger AI
+      operationId: uploadMedicalRecord
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [patient_id, file]
+              properties:
+                patient_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the patient
+                file:
+                  type: string
+                  format: binary
+                  description: Ultrasound image file
+      responses:
+        '200':
+          description: Upload successful and AI processing initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+
+  /api/medical-records/{id}/review:
+    post:
+      tags: [Medical Records]
+      summary: Submit Doctor Review for an AI diagnosis
+      operationId: saveDoctorReview
+      parameters:
+        - name: id
+          in: path
+          description: Medical Record ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agreement]
+              properties:
+                agreement:
+                  type: string
+                  enum: [agree, disagree]
+                note:
+                  type: string
+                heatmapImage:
+                  type: string
+                  description: Data URL for the doctor's brushed/drawn heatmap mask
+      responses:
+        '200':
+          description: Review successfully saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+
+  /api/patients/{id}/reanalyze:
+    post:
+      tags: [Medical Records]
+      summary: Re-run AI analysis on the latest patient image
+      parameters:
+        - name: id
+          in: path
+          description: Patient ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Re-analysis successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicalRecord'
+
+  # ==========================================
+  # CHAT DOKTER - PASIEN
+  # ==========================================
+  /api/chat/{patient_id}:
+    get:
+      tags: [Chat]
+      summary: Get chat history between doctor and patient
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chat history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+    post:
+      tags: [Chat]
+      summary: Send a new chat message
+      parameters:
+        - name: patient_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message, sender_type]
+              properties:
+                message: {type: string}
+                sender_type: {type: string, enum: [doctor, patient]}
+      responses:
+        '201':
+          description: Message sent
+
+  # ==========================================
+  # MEDGEMMA CHATBOT
+  # ==========================================
+  /api/medgemma/consult:
+    post:
+      tags: [MedGemma]
+      summary: Consult with MedGemma AI Chatbot
+      description: Endpoint for both Doctor (second opinion, image analysis) and Patient (health education, pre-consultation). Supports multimodal input (text + medical image).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [prompt, role]
+              properties:
+                prompt:
+                  type: string
+                  description: "User question or prompt for the AI"
+                role:
+                  type: string
+                  enum: [doctor, patient]
+                  description: "Context role to adjust AI response depth"
+                image:
+                  type: string
+                  format: binary
+                  description: "Optional medical image for analysis"
+      responses:
+        '200':
+          description: MedGemma AI response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response: {type: string}
+                  references: 
+                    type: array
+                    items: {type: string}
+
+  # ==========================================
+  # STATISTICS AND LOGS
+  # ==========================================
+  /api/activities:
+    get:
+      tags: [Statistics]
+      summary: Get recent system activity logs
+      responses:
+        '200':
+          description: Recent logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityLog'
+
+  /api/stats/dashboard:
+    get:
+      tags: [Statistics]
+      summary: Get Admin Dashboard Statistics
+      responses:
+        '200':
+          description: Admin top-level stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StatDetail'
+
+  /api/stats/doctor:
+    get:
+      tags: [Statistics]
+      summary: Get Doctor specific statistics
+      responses:
+        '200':
+          description: Doctor KPI stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorStats'
+
+  # ==========================================
+  # NATIVE AI PREDICTION
+  # ==========================================
+  /predict:
+    post:
+      tags: [AI Service]
+      summary: Direct Native AI prediction from ultrasound image
+      operationId: predictBreastCancer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Patient's ultrasound image
+      responses:
+        '200':
+          description: Successful prediction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  class:
+                    type: string
+                    example: Malignant
+                  confidence:
+                    type: number
+                    format: float
+                    example: 0.985
+                  gradcam_base64:
+                    type: string
+                    example: "iVBORw0KGgoAAAANSU..."
+                  gradcam_path:
+                    type: string
+                    example: "gradcam_123.png"
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string, example: "doctor" }
+        status: { type: string, example: "Active" }
+    
+    UserRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string, description: "Only required for creation, optional for updates" }
+        status: { type: string, example: "Active" }
+
+    Patient:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        address: { type: string }
+
+    PatientRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        address: { type: string }
+
+    PatientListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Patient'
+        - type: object
+          properties:
+            image: { type: string, nullable: true, description: "Public URL of original image" }
+            review: { type: string, example: "PENDING", description: "Validation status of latest medical record" }
+
+    PatientDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/Patient'
+        - type: object
+          properties:
+            image: { type: string, nullable: true }
+            aiGradCamImage: { type: string, nullable: true }
+            doctorBrushImage: { type: string, nullable: true }
+            latestRecord:
+              $ref: '#/components/schemas/MedicalRecord'
+            medical_records:
+              type: array
+              items:
+                $ref: '#/components/schemas/MedicalRecord'
+
+    MedicalRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        patient_id: { type: string, format: uuid }
+        original_image_path: { type: string }
+        validation_status: { type: string, example: "PENDING" }
+        ai_diagnosis: { type: string }
+        ai_gradcam_path: { type: string, nullable: true }
+        doctor_diagnosis: { type: string, nullable: true }
+        doctor_notes: { type: string, nullable: true }
+        doctor_brush_path: { type: string, nullable: true }
+        uploaded_at: { type: string, format: date-time }
+        validated_at: { type: string, format: date-time, nullable: true }
+
+    ActivityLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        user: { type: string }
+        time: { type: string }
+        iconColor: { type: string }
+
+    ChatMessage:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        patient_id: { type: string, format: uuid }
+        doctor_id: { type: string, format: uuid }
+        sender_type: { type: string, enum: [doctor, patient] }
+        message: { type: string }
+        created_at: { type: string, format: date-time }
+        is_read: { type: boolean, default: false }
+
+    StatDetail:
+      type: object
+      properties:
+        label: { type: string }
+        value: { type: integer }
+        icon: { type: string }
+        color: { type: string }
+
+    DoctorStats:
+      type: object
+      properties:
+        total: { type: integer, description: "Total patients overseen" }
+        pending: { type: integer, description: "Records waiting for validation" }
+        completed: { type: integer, description: "Records validated" }
+        attention: { type: integer, description: "Records rejected or requiring attention" }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        message: { type: string }
+        status_code: { type: integer }
