@@ -1,0 +1,17 @@
+class AppAssets {
+  AppAssets._();
+
+  // Root folder path
+  static const String basePath = 'assets';
+  static const String imagePath = '$basePath/images';
+  static const String iconPath = '$basePath/icons';
+
+  // --- Images ---
+  // Taruh file logo.png di folder /assets/images/
+  static const String logo = '$imagePath/logo.png';
+  static const String dummyProfile = '$imagePath/dummy_profile.png';
+
+  // --- Icons ---
+  // Taruh file ic_home.png di folder /assets/icons/
+  static const String icHome = '$iconPath/ic_home.png';
+}
