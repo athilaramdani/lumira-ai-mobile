@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 
 import 'package:lumira_ai_mobile/features/landing/landing_page.dart';
 
@@ -15,7 +16,8 @@ class MyApp extends StatelessWidget {
       title: 'Lumira AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+        scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
         fontFamily: 'Inter', // Fallback to Inter if available, otherwise default
       ),

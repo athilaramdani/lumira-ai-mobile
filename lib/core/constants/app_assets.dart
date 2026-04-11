@@ -7,12 +7,12 @@ class AppAssets {
   static const String iconPath = '$basePath/icons';
 
   // --- Images ---
+  // --- Images ---
   // Taruh file logo.png di folder /assets/images/
   static const String logo = '$iconPath/logo_lumira.png';
   static const String doctor = '$imagePath/doctor.png';
   static const String dummyProfile = '$imagePath/dummy_profile.png';
 
   // --- Icons ---
-  // Taruh file ic_home.png di folder /assets/icons/
   static const String icHome = '$iconPath/ic_home.png';
 }
