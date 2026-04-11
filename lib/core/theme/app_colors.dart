@@ -20,4 +20,17 @@ class AppColors {
   static const Color success = Color(0xFF198754);
   static const Color error = Color(0xFFDC3545);
   static const Color warning = Color(0xFFFFC107);
+
+  // --- Warna Tambahan untuk Status AI ---
+  static const Color statusNormal = Color(0xFF4CAF50);
+  static const Color statusBenign = Color(0xFF42A5F5);
+  static const Color statusMalignant = Color(0xFFF44336);
+  static const Color statusUnknown = Color(0xFFFFC107);
+  static const Color statusMissing = Color(0xFFFF9800);
+
+  // --- Warna Tombol & Aksi ---
+  static const Color btnReview = Color(0xFF64B5F6);
+  static const Color btnReviewNeeded = Color(0xFFFFD54F);
+  static const Color btnDone = Color(0xFF64DD17);
+  static const Color btnChat = Color(0xFFFFA000);
 }
