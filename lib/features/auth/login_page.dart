@@ -96,24 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       // LOGIN Tab/Title Button shape
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'LOGIN',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                      
+
                       // Email Field Group
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -227,7 +210,7 @@ class _LoginPageState extends State<LoginPage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Get In',
+                                    'Login',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -239,33 +222,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                       ),
 
-                      // Register Text
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Don't Have Account? ",
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              // Navigate to Register Page
-                            },
-                            child: const Text(
-                              "Register here",
-                              style: TextStyle(
-                                color: AppColors.primaryLight,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      
+
                       const SizedBox(height: 10),
                       
                       // DEBUG: Skip to Patient Dashboard
