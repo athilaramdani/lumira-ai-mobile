@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class PatientSearchBar extends StatelessWidget {
-  const PatientSearchBar({super.key});
+  final ValueChanged<String>? onChanged;
+
+  const PatientSearchBar({super.key, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +22,7 @@ class PatientSearchBar extends StatelessWidget {
         ],
       ),
       child: TextField(
+        onChanged: onChanged,
         decoration: InputDecoration(
           hintText: 'Search Patient...',
           hintStyle: TextStyle(

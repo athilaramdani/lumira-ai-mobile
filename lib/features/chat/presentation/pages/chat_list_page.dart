@@ -3,8 +3,56 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
 import 'chat_page.dart';
 
-class ChatListPage extends StatelessWidget {
+class ChatItemData {
+  final String name;
+  final String id;
+  final String message;
+  final String time;
+  final bool isOnline;
+
+  ChatItemData({
+    required this.name,
+    required this.id,
+    required this.message,
+    required this.time,
+    required this.isOnline,
+  });
+}
+
+class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
+
+  @override
+  State<ChatListPage> createState() => _ChatListPageState();
+}
+
+class _ChatListPageState extends State<ChatListPage> {
+  String _searchQuery = '';
+
+  final List<ChatItemData> _chats = [
+    ChatItemData(
+      name: 'Rizky',
+      id: 'P004',
+      message: 'Dok, hasil saya bagaimana ya?',
+      time: '12:15 AM',
+      isOnline: true,
+    ),
+    ChatItemData(
+      name: 'Rani',
+      id: 'P002',
+      message: 'Dok, apakah saya bisa konsultasi?',
+      time: '09:45 AM',
+      isOnline: true,
+    ),
+  ];
+
+  List<ChatItemData> get _filteredChats {
+    if (_searchQuery.isEmpty) return _chats;
+    final query = _searchQuery.toLowerCase();
+    return _chats.where((chat) {
+      return chat.name.toLowerCase().contains(query) || chat.id.toLowerCase().contains(query);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,25 +75,19 @@ class ChatListPage extends StatelessWidget {
         children: [
           _buildSearchBar(),
           Expanded(
-            child: ListView(
-              children: [
-                _buildChatListItem(
+            child: ListView.builder(
+              itemCount: _filteredChats.length,
+              itemBuilder: (context, index) {
+                final chat = _filteredChats[index];
+                return _buildChatListItem(
                   context,
-                  name: 'Rizky',
-                  id: 'P004',
-                  message: 'Dok, hasil saya bagaimana ya?',
-                  time: '12:15 AM',
-                  isOnline: true,
-                ),
-                _buildChatListItem(
-                  context,
-                  name: 'Rani',
-                  id: 'P002',
-                  message: 'Dok, apakah saya bisa konsultasi?',
-                  time: '09:45 AM',
-                  isOnline: true,
-                ),
-              ],
+                  name: chat.name,
+                  id: chat.id,
+                  message: chat.message,
+                  time: chat.time,
+                  isOnline: chat.isOnline,
+                );
+              },
             ),
           ),
         ],
@@ -65,6 +107,11 @@ class ChatListPage extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200),
         ),
         child: TextField(
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
           decoration: InputDecoration(
             hintText: 'Search Patient...',
             hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
