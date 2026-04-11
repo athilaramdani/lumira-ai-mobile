@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'features/auth/presentation/pages/landing_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,9 +12,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Lumira AI',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+        scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
+        fontFamily: 'Inter', // Fallback to Inter if available, otherwise default
       ),
       home: const LandingPage(),
     );
