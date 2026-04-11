@@ -27,7 +27,49 @@ class _LandingPageState extends State<LandingPage> {
               _buildPage3(),
             ],
           ),
-          // Optional: Add a skip button or dots here if desired later
+          // Skip button
+          Positioned(
+            top: 50,
+            right: 20,
+            child: TextButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              child: const Text(
+                'Skip',
+                style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          // Next button (Fab)
+          Positioned(
+            bottom: 40,
+            right: 20,
+            child: FloatingActionButton(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              onPressed: () {
+                if (_pageController.hasClients) {
+                  if (_pageController.page?.round() == 2) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                    );
+                  } else {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                }
+              },
+              child: const Icon(Icons.arrow_forward),
+            ),
+          ),
         ],
       ),
     );

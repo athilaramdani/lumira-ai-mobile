@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
-import 'status_badge.dart'; // From same folder
+import 'package:lumira_ai_mobile/core/widgets/status_badge.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/chat_page.dart';
 
 class ScanCard extends StatelessWidget {
