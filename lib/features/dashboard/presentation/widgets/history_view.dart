@@ -344,39 +344,10 @@ class HistoryView extends StatelessWidget {
   }
 
   void _navigateToChat(BuildContext context, {required String doctorName}) {
-    // Generate different template messages based on the doctor name context
-    final isWijaya = doctorName.contains('Wijaya');
-    
-    final initialMessages = [
-      ChatMessage(
-        text: isWijaya 
-            ? 'Dok, untuk persiapan biopsi minggu depan apa saja yang perlu saya perhatikan?' 
-            : 'Dok, terkait hasil mamografi terbaru saya, apa saran yang terbaik?',
-        isUser: true,
-        time: '09:00',
-      ),
-      ChatMessage(
-        text: isWijaya 
-            ? 'Tentu. Tolong puasa 8 jam sebelum jadwal biopsi. Dan hentikan obat pengencer darah jika Bapak/Ibu mengonsumsinya.' 
-            : 'Hasil mamografi Anda terlihat stabil. Tidak perlu khawatir, cukup lanjutkan pemeriksaan rutin tahun depan.',
-        isUser: false,
-        time: '09:05',
-      ),
-      ChatMessage(
-        text: 'Baik dok. Terima kasih banyak informasinya.',
-        isUser: true,
-        time: '09:06',
-      ),
-    ];
-
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ChatPage(
-          doctorName: doctorName,
-          doctorStatus: 'Offline',
-          initialMessages: initialMessages,
-        ),
+        builder: (_) => const ChatPage(),
       ),
     );
   }

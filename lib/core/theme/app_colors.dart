@@ -6,6 +6,8 @@ class AppColors {
   // --- Warna Utama (Primary & Secondary) ---
   static const Color primary = Color(0xFF0398F6); // Biru Lumira dari desain UI
   static const Color primaryLight = Color(0xFFE3F4FE); // Background active button dll
+  static const Color primaryLighter = Color(0xFFA5DBFD);
+  static const Color primaryLightest = Color(0xFFCCEBFF);
   static const Color secondary = Color(0xFF6C757D);
 
   // --- Background & Surface ---
@@ -21,11 +23,23 @@ class AppColors {
   static const Color textLight = Colors.white;
 
   // --- Status & feedback (Error, Success, dll) ---
-  static const Color success = Color(0xFF16A34A); // Hijau Done
-  static const Color successLight = Color(0xFFDCFCE7);
-  static const Color error = Color(0xFFDC2626); // Merah/Error
-  static const Color warning = Color(0xFFF59E0B); // Yellow In Review
-  static const Color warningLight = Color(0xFFFEF3C7);
-  static const Color pending = Color(0xFF94A3B8); // Grey Pending
-  static const Color pendingLight = Color(0xFFE2E8F0);
+  static const Color success = Color(0xFF198754);
+  static const Color error = Color(0xFFDC3545);
+  static const Color warning = Color(0xFFFFC107);
+
+  // --- Doctor Dashboard & Features ---
+  static const Color btnReview = Color(0xFF0398F6);
+  static const Color btnReviewNeeded = Color(0xFFFF9800);
+  static const Color btnDone = Color(0xFF4CAF50);
+  static const Color btnChat = Color(0xFF9C27B0);
+  
+  // --- Status Colors ---
+  static const Color statusNormal = Color(0xFF4CAF50);
+  static const Color statusBenign = Color(0xFFFF9800);
+  static const Color statusMalignant = Color(0xFFF44336);
+  static const Color statusUnknown = Color(0xFF9E9E9E);
+
+  static const Color pending = Color(0xFFFF9800);
+  static const Color pendingLight = Color(0xFFFFF3E0);
+  static const Color warningLight = Color(0xFFFFF8E1);
 }
