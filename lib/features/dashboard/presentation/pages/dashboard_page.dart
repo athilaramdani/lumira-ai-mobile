@@ -3,7 +3,8 @@ import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/category_tabs.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/scan_card.dart';
-import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/status_badge.dart';
+import 'package:lumira_ai_mobile/core/widgets/status_badge.dart';
+import 'package:lumira_ai_mobile/core/widgets/custom_search_bar.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/promo_card.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/custom_bottom_nav.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/consult_ai_view.dart';
@@ -72,31 +73,8 @@ class _DashboardPageState extends State<DashboardPage> {
     return Column(
       children: [
         // Search Bar
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const TextField(
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                hintStyle: TextStyle(color: AppColors.textSecondary),
-                prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              ),
-            ),
-          ),
+        const CustomSearchBar(
+          hintText: 'Search...',
         ),
         
         // Category Tabs

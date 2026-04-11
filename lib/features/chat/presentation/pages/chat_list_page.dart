@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
+import '../../../../core/widgets/custom_search_bar.dart';
 import 'chat_page.dart';
 
 class ChatItemData {
@@ -57,9 +58,9 @@ class _ChatListPageState extends State<ChatListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
@@ -73,7 +74,14 @@ class _ChatListPageState extends State<ChatListPage> {
       ),
       body: Column(
         children: [
-          _buildSearchBar(),
+          CustomSearchBar(
+            hintText: 'Search Patient...',
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+          ),
           Expanded(
             child: ListView.builder(
               itemCount: _filteredChats.length,
@@ -95,33 +103,6 @@ class _ChatListPageState extends State<ChatListPage> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: Colors.blue.shade50.withOpacity(0.3),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: TextField(
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
-          decoration: InputDecoration(
-            hintText: 'Search Patient...',
-            hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-            prefixIcon: Icon(Icons.search, color: Colors.grey.shade400, size: 20),
-            border: InputBorder.none,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildChatListItem(
     BuildContext context, {

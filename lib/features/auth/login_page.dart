@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 import 'data/auth_service.dart';
+import '../dashboard/presentation/pages/doctor_dashboard_page.dart';
+import '../dashboard/presentation/pages/dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,48 +27,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final token = await _authService.login(email, password);
-      
-      if (!mounted) return;
-      
-      if (token != null) {
-        // Success
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login Successful!')),
-        );
-        // TODO: Navigate to Dashboard and Save Token Here
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardPage()));
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    // Bypass authentication for UI testing
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('UI Tester Mode: Bypassing Login...')),
+    );
+    Navigator.pushReplacement(
+      context, 
+      MaterialPageRoute(builder: (_) => const DoctorDashboardPage()),
+    );
   }
 
   @override
@@ -299,6 +267,26 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       
                       const SizedBox(height: 10),
+                      
+                      // DEBUG: Skip to Patient Dashboard
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context, 
+                              MaterialPageRoute(builder: (_) => const DashboardPage()),
+                            );
+                          },
+                          child: const Text(
+                            'Masuk Pasien (DEBUG)',
+                            style: TextStyle(
+                              color: Colors.redAccent, 
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
