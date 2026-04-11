@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_search_bar.dart';
 import '../widgets/doctor_header.dart';
 import '../widgets/stat_card.dart';
-import '../widgets/patient_search_bar.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/doctor_bottom_nav_bar.dart';
-import '../../../auth/presentation/pages/landing_page.dart';
+import 'package:lumira_ai_mobile/features/landing/landing_page.dart';
 import '../../../chat/presentation/pages/chat_list_page.dart';
 
 class PatientData {
@@ -194,7 +194,8 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
                     ),
                     _buildStatCards(),
                     const SizedBox(height: 10),
-                    PatientSearchBar(
+                    CustomSearchBar(
+                      hintText: 'Search Patient...',
                       onChanged: (value) {
                         setState(() {
                           _searchQuery = value;
