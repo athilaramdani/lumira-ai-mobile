@@ -37,6 +37,7 @@ class DoctorDashboardPage extends StatefulWidget {
 
 class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
   int _currentIndex = 2; // Default to "Grid/All" (Screen 1 in image)
+  String _searchQuery = '';
 
   final List<PatientData> _allPatients = [
     PatientData(
@@ -78,16 +79,23 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
   ];
 
   List<PatientData> get _filteredPatients {
+    // 1. First filter by search query
+    List<PatientData> searchResults = _allPatients.where((p) {
+      final query = _searchQuery.toLowerCase();
+      return p.name.toLowerCase().contains(query) || p.id.toLowerCase().contains(query);
+    }).toList();
+
+    // 2. Then filter by category tab
     switch (_currentIndex) {
       case 0:
-        return _allPatients.where((p) => p.filterCategory == 'waiting').toList();
+        return searchResults.where((p) => p.filterCategory == 'waiting').toList();
       case 1:
-        return _allPatients.where((p) => p.filterCategory == 'done').toList();
+        return searchResults.where((p) => p.filterCategory == 'done').toList();
       case 3:
-        return _allPatients.where((p) => p.filterCategory == 'attention').toList();
+        return searchResults.where((p) => p.filterCategory == 'attention').toList();
       case 2:
       default:
-        return _allPatients;
+        return searchResults;
     }
   }
 
@@ -186,7 +194,13 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
                     ),
                     _buildStatCards(),
                     const SizedBox(height: 10),
-                    const PatientSearchBar(),
+                    PatientSearchBar(
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 10),
                     _buildPatientList(),
                     const SizedBox(height: 20),
