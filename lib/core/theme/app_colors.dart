@@ -23,11 +23,7 @@ class AppColors {
   static const Color textLight = Colors.white;
 
   // --- Status & feedback (Error, Success, dll) ---
-  static const Color success = Color(0xFF16A34A); // Hijau Done
-  static const Color successLight = Color(0xFFDCFCE7);
-  static const Color error = Color(0xFFDC2626); // Merah/Error
-  static const Color warning = Color(0xFFF59E0B); // Yellow In Review
-  static const Color warningLight = Color(0xFFFEF3C7);
-  static const Color pending = Color(0xFF94A3B8); // Grey Pending
-  static const Color pendingLight = Color(0xFFE2E8F0);
+  static const Color success = Color(0xFF198754);
+  static const Color error = Color(0xFFDC3545);
+  static const Color warning = Color(0xFFFFC107);
 }

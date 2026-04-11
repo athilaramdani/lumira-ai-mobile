@@ -9,9 +9,11 @@ class AppAssets {
   // --- Images ---
   // --- Images ---
   // Taruh file logo.png di folder /assets/images/
-  static const String logo = '$iconPath/logo_lumira.png';
-  static const String doctor = '$imagePath/doctor.png';
+  static const String logo = '$imagePath/logo.png';
   static const String dummyProfile = '$imagePath/dummy_profile.png';
+  static const String doctorProfile = '$imagePath/doctor.png';
+  static const String medicalScanModel = '$imagePath/medical_scan_model.png';
+  static const String medicalScanBrush = '$imagePath/medical_scan_brush.png';
 
   // --- Icons ---
   static const String icHome = '$iconPath/ic_home.png';
