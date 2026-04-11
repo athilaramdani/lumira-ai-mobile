@@ -8,7 +8,8 @@ class AppAssets {
 
   // --- Images ---
   // Taruh file logo.png di folder /assets/images/
-  static const String logo = '$imagePath/logo.png';
+  static const String logo = '$iconPath/logo_lumira.png';
+  static const String doctor = '$imagePath/doctor.png';
   static const String dummyProfile = '$imagePath/dummy_profile.png';
 
   // --- Icons ---

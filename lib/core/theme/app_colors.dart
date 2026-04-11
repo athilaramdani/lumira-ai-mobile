@@ -5,7 +5,10 @@ class AppColors {
   AppColors._();
 
   // --- Warna Utama (Primary & Secondary) ---
-  static const Color primary = Color(0xFF0D6EFD); // Contoh Biru Lumira
+  static const Color primary = Color(0xFF0093EE); // Primary Blue
+  static const Color primaryLight = Color(0xFF57BEFF);
+  static const Color primaryLighter = Color(0xFFA5DBFD);
+  static const Color primaryLightest = Color(0xFFCCEBFF);
   static const Color secondary = Color(0xFF6C757D);
 
   // --- Background & Surface ---
