@@ -7,10 +7,12 @@ class AppAssets {
   static const String iconPath = '$basePath/icons';
 
   // --- Images ---
-  static const String logo = '$iconPath/logo_lumira.png';
+  static const String logo = '$imagePath/logo_lumira.png';
   static const String doctor = '$imagePath/doctor.png';
-  static const String dummyProfile = '$imagePath/doctor.png';
+  static const String doctorLogo = '$imagePath/logo.png'; // temporarily point to logo.png
+  static const String medicalScanModel = '$imagePath/medical_scan_model.png';
+  static const String medicalScanBrush = '$imagePath/medical_scan_brush.png';
 
   // --- Icons ---
-  static const String icHome = '$iconPath/ic_home.png';
+  static const String icHome = '$iconPath/logo_lumira.png'; // temporarily map missing icon
 }
