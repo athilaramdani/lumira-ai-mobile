@@ -24,7 +24,7 @@ class DashboardHeader extends StatelessWidget {
         top: MediaQuery.of(context).padding.top + 16,
         left: 20,
         right: 20,
-        bottom: 16,
+        bottom: 40,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
