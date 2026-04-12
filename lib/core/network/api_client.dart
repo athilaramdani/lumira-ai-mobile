@@ -1,11 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   late final Dio dio;
 
-  // Sesuaikan constant ini jika ingin pindah ke server lokal/production
-  static const String _baseUrl = 'http://10.0.2.2:8000'; // Gunakan 10.0.2.2 untuk emulator Android, localhost untuk iOS/Web, atau 'https://api.lumira.ai' untuk Production
+  // Read BASE_URL from .env file
+  static final String _baseUrl = dotenv.get('BASE_URL', fallback: 'https://apilumiraai.vercel.app');
 
   factory ApiClient() {
     return _instance;
