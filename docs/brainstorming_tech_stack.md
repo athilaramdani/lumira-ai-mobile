@@ -22,8 +22,3 @@ Berdasarkan diskusi tim pada tanggal 18 Maret, berikut adalah rangkuman keputusa
 - **Database**: Supabase
 - **Alur Data**: Aplikasi mobile tidak akan berinteraksi langsung ke Supabase. Aplikasi mobile akan berkomunikasi dengan sistem Backend (BE), yang kemudian diteruskan oleh BE ke Supabase.
 - **Status Saat Ini**: Tim *developer* sedang dalam proses memisahkan sistem Frontend (FE) dan Backend (BE) karena sebelumnya tergabung dalam satu proyek (*Fullstack*).
-
-## 5. Langkah Selanjutnya (*Next Steps*)
-- Menunggu pemisahan FE dan BE selesai dilakukan oleh tim terkait.
-- Menunggu turunnya dokumen **API Specification** dari tim Backend agar tim Mobile dapat mulai menyiapkan integrasi (termasuk implementasi menggunakan Dio dan pendefinisian model datanya).
-- Menentukan layanan untuk *Push Notification* (seperti Firebase Cloud Messaging atau OneSignal) dan *Crash Reporting* (seperti Firebase Crashlytics atau Sentry).
