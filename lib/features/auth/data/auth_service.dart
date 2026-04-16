@@ -6,14 +6,16 @@ class AuthService {
 
   Future<String?> login(String email, String password) async {
     try {
-      final response = await _dio.post('/api/auth/login', data: {
+      final response = await _dio.post('/auth/login', data: {
         'email': email,
         'password': password,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // TODO: Sesuaikan key respons sesuai json response backend Anda (misal 'token', 'data.token')
-        final token = response.data['token'] ?? response.data['data']?['token'];
+        // Backend response: {"status":"success","data":{"accessToken":"..."}}
+        final token = response.data['data']?['accessToken'] ??
+                     response.data['accessToken'] ??
+                     response.data['token'];
         return token;
       }
       return null;
