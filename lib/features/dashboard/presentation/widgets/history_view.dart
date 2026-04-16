@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/chat_page.dart';
+import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/clinical_report_page.dart';
 
 class HistoryView extends StatelessWidget {
   const HistoryView({super.key});
@@ -217,7 +218,12 @@ class HistoryView extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ClinicalReportPage()),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0EA5E9),
                 foregroundColor: Colors.white,
