@@ -14,10 +14,8 @@ class DashboardHeader extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             AppColors.headerGradientStart,
-            AppColors.headerGradientEnd,
-            AppColors.background,
+            AppColors.headerGradientStart,
           ],
-          stops: [0.0, 0.7, 1.0],
         ),
       ),
       padding: EdgeInsets.only(

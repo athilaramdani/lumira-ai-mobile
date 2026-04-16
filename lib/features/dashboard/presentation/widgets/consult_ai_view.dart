@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/medgemma_chat_page.dart';
+import 'package:lumira_ai_mobile/features/chat/presentation/pages/ai_result_interpretation_page.dart';
 
 class ConsultAiView extends StatelessWidget {
   const ConsultAiView({super.key});
@@ -149,6 +150,12 @@ class ConsultAiView extends StatelessWidget {
                   icon: Icons.receipt_long,
                   title: 'Result\nInterpretation',
                   description: 'Decode complex medical reports with clarity',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AiResultInterpretationPage()),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 16),
@@ -160,49 +167,6 @@ class ConsultAiView extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Bottom Promo Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome, color: Colors.white, size: 36),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Weekly Wellness Digest',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Based on your last 3 discussions, I\'ve prepared a guide on stress-management during screenings',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-              ],
-            ),
           ),
           
           const SizedBox(height: 80), // Padding for bottom nav
@@ -307,45 +271,49 @@ class ConsultAiView extends StatelessWidget {
     required IconData icon,
     required String title,
     required String description,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.primary, size: 28),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-              height: 1.4,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: AppColors.primary, size: 28),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 10,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
