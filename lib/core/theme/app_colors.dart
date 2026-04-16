@@ -42,4 +42,9 @@ class AppColors {
   static const Color pending = Color(0xFFFF9800);
   static const Color pendingLight = Color(0xFFFFF3E0);
   static const Color warningLight = Color(0xFFFFF8E1);
+
+  // --- Landing Page Accent (Why Choose Us) ---
+  static const Color accentPink = Color(0xFFF48FB1);
+  static const Color accentPinkLight = Color(0xFFFCE4EC);
+  static const Color accentPinkBg = Color(0xFFF8BBD0);
 }

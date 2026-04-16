@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/widgets/custom_search_bar.dart';
 import 'chat_page.dart';
+import 'patient_chat_page.dart';
 
 class ChatItemData {
   final String name;
@@ -118,7 +119,12 @@ class _ChatListPageState extends State<ChatListPage> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ChatPage()),
+            MaterialPageRoute(
+              builder: (context) => PatientChatPage(
+                patientName: name,
+                patientId: id,
+              ),
+            ),
           );
         },
         child: Container(

@@ -7,8 +7,10 @@ class AppAssets {
   static const String iconPath = '$basePath/icons';
 
   // --- Images ---
-  static const String logo = '$imagePath/logo_lumira.png';
+  static const String logo = '$imagePath/logo.png';
   static const String doctor = '$imagePath/doctor.png';
+  static const String doctorProfile = '$imagePath/doctor.png';
+  static const String dummyProfile = '$imagePath/doctor.png';
   static const String doctorLogo = '$imagePath/logo.png'; // temporarily point to logo.png
   static const String doctorProfile = '$imagePath/doctor.png';
   static const String dummyProfile = '$imagePath/doctor.png';
