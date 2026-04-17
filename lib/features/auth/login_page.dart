@@ -245,10 +245,19 @@ class _LoginPageState extends ConsumerState<LoginPage>
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) {
             _loadingOverlayController.reverse();
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const DoctorDashboardPage()),
-            );
+            
+            final role = next.user?.role;
+            if (role == 'patient' || role == 'Patient') {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const DashboardPage()),
+              );
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const DoctorDashboardPage()),
+              );
+            }
           }
         });
       }
@@ -448,31 +457,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                     ),
                                   ),
 
-                                  SizedBox(height: size.height * 0.02),
 
-                                  // DEBUG: Skip to Patient Dashboard
-                                  Center(
-                                    child: TextButton(
-                                      onPressed: () {
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const DashboardPage()),
-                                        );
-                                      },
-                                      child: const Text(
-                                        'Masuk Pasien (DEBUG)',
-                                        style: TextStyle(
-                                          color: Colors.redAccent,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  SizedBox(height: size.height * 0.02),
                                 ],
                               ),
                             ),
