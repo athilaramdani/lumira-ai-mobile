@@ -9,34 +9,49 @@ import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/pa
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/classification_results_card.dart';
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/doctor_diagnosis_card.dart';
 import 'medical_review_summary_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/patient_card.dart';
 
-class MedicalReviewPage extends StatefulWidget {
-  const MedicalReviewPage({super.key});
+class MedicalReviewPage extends ConsumerStatefulWidget {
+  final String patientId;
+  final String patientName;
+  final AIResult aiResult;
+
+  const MedicalReviewPage({
+    super.key,
+    required this.patientId,
+    required this.patientName,
+    required this.aiResult,
+  });
 
   @override
-  State<MedicalReviewPage> createState() => _MedicalReviewPageState();
+  ConsumerState<MedicalReviewPage> createState() => _MedicalReviewPageState();
 }
 
-class _MedicalReviewPageState extends State<MedicalReviewPage> {
+class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
   bool _gradCam = false;
   double _transparency = 0.5;
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final doctorName = authState.user?.name ?? 'Doctor';
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            const DoctorHeader(doctorName: 'Anne'),
+            DoctorHeader(doctorName: doctorName),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
                     const SizedBox(height: 10),
-                    const Text(
-                      'Welcome Dr Anne!',
-                      style: TextStyle(
+                    Text(
+                      'Welcome Dr $doctorName!',
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
@@ -73,21 +88,34 @@ class _MedicalReviewPageState extends State<MedicalReviewPage> {
     );
   }
 
+  ClassificationStatus _mapToClassificationStatus(AIResult aiResult) {
+    switch (aiResult) {
+      case AIResult.malignant:
+        return ClassificationStatus.malignant;
+      case AIResult.benign:
+        return ClassificationStatus.benign;
+      case AIResult.normal:
+      case AIResult.unknown:
+      default:
+        return ClassificationStatus.normal;
+    }
+  }
+
   Widget _buildImageSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Row(
-        children: const [
+        children: [
           Expanded(
             child: MedicalImageCard(
-              label: 'Model Output',
+              label: 'Model Output (${widget.patientId.substring(0, 4)})',
               imagePath: AppAssets.medicalScanModel,
             ),
           ),
-          SizedBox(width: 15),
+          const SizedBox(width: 15),
           Expanded(
             child: MedicalImageCard(
-              label: 'Brush',
+              label: 'Brush (${widget.patientId.substring(0, 4)})',
               imagePath: AppAssets.medicalScanBrush,
             ),
           ),
@@ -140,13 +168,13 @@ class _MedicalReviewPageState extends State<MedicalReviewPage> {
             child: Column(
               children: [
                 PatientInfoCard(
-                  id: 'P001',
-                  name: 'Bachtiar',
+                  id: widget.patientId,
+                  name: widget.patientName,
                   phone: '08123456789',
                 ),
                 SizedBox(height: 15),
                 ClassificationResultsCard(
-                  activeStatus: ClassificationStatus.normal,
+                  activeStatus: _mapToClassificationStatus(widget.aiResult),
                   onStatusTap: (status) {
                     Navigator.push(
                       context,
