@@ -2,12 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/medgemma_chat_page.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/ai_result_interpretation_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../statistics/presentation/controllers/statistics_controller.dart';
 
-class ConsultAiView extends StatelessWidget {
+class ConsultAiView extends ConsumerWidget {
   const ConsultAiView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsState = ref.watch(statisticsControllerProvider);
+    final activities = statsState.activities;
+
+    final List<Widget> chatCards = activities.isEmpty
+      ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No recent AI chats found.'))]
+      : activities.map((activity) {
+          return _buildChatCard(
+            category: activity['status']?.toString().toUpperCase() ?? 'GENERAL INQUIRY',
+            title: activity['title']?.toString() ?? 'AI Consultation',
+            snippet: '"${activity['result'] ?? 'Discussing medical results and AI interpretation.'}"',
+            time: activity['date']?.toString() ?? 'Recent',
+          );
+        }).whereType<Widget>().toList();
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -109,24 +124,7 @@ class ConsultAiView extends StatelessWidget {
           const SizedBox(height: 16),
           
           // Recent Chat List (using Stack to overlay the button inside this list area if needed, but we'll return simple column and rely on Scaffold FAB for floating button)
-          _buildChatCard(
-            category: 'RESULT INTERPRETATION',
-            title: 'Mammogram Analysis Review',
-            snippet: '"Can you explain the BIRADS-2 classification in my latest report?"',
-            time: '2h ago',
-          ),
-          _buildChatCard(
-            category: 'LIFESTYLE GUIDANCE',
-            title: 'Post-Screening Diet',
-            snippet: '"What anti-inflammatory foods are recommended during recovery?"',
-            time: '23h ago',
-          ),
-          _buildChatCard(
-            category: 'SYMPTOMS',
-            title: 'Unusual Tenderness Tracking',
-            snippet: '"Discussing monthly cyclical changes and local sensitivity for the unusual tenderness for tracking my..."',
-            time: '',
-          ),
+          ...chatCards,
           
           const SizedBox(height: 24),
           
