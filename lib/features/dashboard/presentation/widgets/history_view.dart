@@ -3,12 +3,41 @@ import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/chat_page.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/clinical_report_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../statistics/presentation/controllers/statistics_controller.dart';
 
-class HistoryView extends StatelessWidget {
+class HistoryView extends ConsumerWidget {
   const HistoryView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsState = ref.watch(statisticsControllerProvider);
+    final activities = statsState.activities;
+
+    final List<Widget> dynamicDiagnosisCards = activities.isEmpty
+      ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No historical records found.'))]
+      : activities.map((activity) {
+          return _buildDiagnosisCard(
+            context,
+            id: activity['id']?.toString() ?? '#USG-???',
+            title: activity['title']?.toString() ?? 'Medical Scan',
+            date: activity['date']?.toString() ?? 'Recent',
+            result: activity['result']?.toString().toUpperCase() ?? 'UNKNOWN',
+            icon: Icons.medical_services_outlined,
+          );
+        }).whereType<Widget>().toList();
+
+    final List<Widget> dynamicChatCards = activities.isEmpty
+      ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No previous consultations found.'))]
+      : activities.map((activity) {
+          return _buildDoctorChatCard(
+            context,
+            doctorName: activity['doctor_name']?.toString() ?? 'Dr. Specialist',
+            role: 'Consulting Doctor',
+            relatedId: activity['id']?.toString() ?? '#USG-???',
+            date: activity['date']?.toString() ?? 'Recent',
+          );
+        }).whereType<Widget>().toList();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
       child: Column(
@@ -41,22 +70,7 @@ class HistoryView extends StatelessWidget {
           const SizedBox(height: 16),
           
           // Diagnosis Cards
-          _buildDiagnosisCard(
-            context,
-            id: '#USG - 99275 - Z',
-            title: 'USG Biopsy',
-            date: 'Oct 14, 2025',
-            result: 'BENIGN (STABLE)',
-            icon: Icons.verified,
-          ),
-          _buildDiagnosisCard(
-            context,
-            id: '#MMG - 44102 - X',
-            title: 'Screening Mammography',
-            date: 'May 22, 2025',
-            result: 'NORMAL',
-            icon: Icons.medical_services_outlined,
-          ),
+          ...dynamicDiagnosisCards,
 
           const SizedBox(height: 32),
 
@@ -92,20 +106,7 @@ class HistoryView extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Doctor Chat Cards
-          _buildDoctorChatCard(
-            context,
-            doctorName: 'Dr. Wijaya, Sp.Onk',
-            role: 'Surgical Oncologist',
-            relatedId: '#USG-99275-Z',
-            date: 'Oct 16, 2025',
-          ),
-          _buildDoctorChatCard(
-            context,
-            doctorName: 'Dr. Tirta, Sp.Rad',
-            role: 'Radiologist',
-            relatedId: '#MMG-44102-X',
-            date: 'Oct 24, 2025',
-          ),
+          ...dynamicChatCards,
 
           const SizedBox(height: 80), // Bottom nav padding
         ],

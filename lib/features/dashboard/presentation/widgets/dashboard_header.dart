@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 
-class DashboardHeader extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+
+class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    final userName = authState.user?.name ?? 'User';
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -83,10 +89,10 @@ class DashboardHeader extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
+                    const Text(
                       'Welcome,',
                       style: TextStyle(
                         fontSize: 10,
@@ -95,8 +101,8 @@ class DashboardHeader extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Bobby',
-                      style: TextStyle(
+                      userName,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
