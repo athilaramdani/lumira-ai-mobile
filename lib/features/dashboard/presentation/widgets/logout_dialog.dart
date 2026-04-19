@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/features/landing/landing_page.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 
-class LogoutDialog extends StatelessWidget {
+class LogoutDialog extends ConsumerWidget {
   const LogoutDialog({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
@@ -66,14 +68,19 @@ class LogoutDialog extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // Navigate to Landing Page and clear the route stack
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                      builder: (context) => const LandingPage(),
-                    ),
-                    (Route<dynamic> route) => false,
-                  );
+                onPressed: () async {
+                  // Clear the auth state and token
+                  await ref.read(authControllerProvider.notifier).logout();
+                  
+                  if (context.mounted) {
+                    // Navigate to Landing Page and clear the route stack
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const LandingPage(),
+                      ),
+                      (Route<dynamic> route) => false,
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFD30000), // Solid red
