@@ -11,6 +11,7 @@ import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/consult
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/history_view.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/chat_page.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/medgemma_chat_page.dart';
+import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../statistics/presentation/controllers/statistics_controller.dart';
 
@@ -64,7 +65,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const DashboardHeader(),
+            if (_currentNavIndex != 3)
+              const DashboardHeader(),
             
             if (_currentNavIndex == 0)
               _buildStatsContent(),
@@ -74,6 +76,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               
             if (_currentNavIndex == 2)
               const HistoryView(),
+              
+            if (_currentNavIndex == 3)
+              const ProfileView(),
           ],
         ),
       ),
