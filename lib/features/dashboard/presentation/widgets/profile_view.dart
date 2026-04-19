@@ -9,16 +9,40 @@ import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile
 import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/edit_profile_page.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/logout_dialog.dart';
 
-class ProfileView extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+
+class ProfileView extends ConsumerWidget {
   const ProfileView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    final user = authState.user;
+
+    if (authState.isLoading && user == null) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final id = user?.id ?? '-';
+    final name = user?.name ?? 'Unknown';
+    final email = user?.email ?? '-';
+    final phone = user?.phone ?? '-';
+    final dob = user?.dateOfBirth ?? '-';
+    final address = user?.address ?? '-';
+    final city = user?.city ?? '-';
+    final postalCode = user?.postalCode ?? '-';
+
     return Column(
       children: [
         ProfileHeader(
-          patientId: 'LX-8842',
-          patientName: 'Bobby Rojusian',
+          patientId: id,
+          patientName: name,
           onEditTap: () {
             Navigator.push(
               context,
@@ -33,18 +57,18 @@ class ProfileView extends StatelessWidget {
           headerIcon: Icons.person_outline,
           headerTitle: 'Account Details',
           child: Column(
-            children: const [
+            children: [
               ProfileInfoRow(
                 label: 'Email',
-                value: 'bobbyroji@gmail.com',
+                value: email,
               ),
               ProfileInfoRow(
                 label: 'Phone',
-                value: '+62 812-3456-7890',
+                value: phone,
               ),
               ProfileInfoRow(
                 label: 'Date of Birth',
-                value: 'March 14, 1985',
+                value: dob,
                 showDivider: false,
               ),
             ],
@@ -56,26 +80,26 @@ class ProfileView extends StatelessWidget {
           headerTitle: 'Account Address',
           child: Column(
             children: [
-              const ProfileDisplayField(
+              ProfileDisplayField(
                 label: '',
-                value: 'Jl. Kemang Raya No. 12,\nMampang Prapatan, Jakarta\nSelatan, 12730',
+                value: address,
                 isMultiLine: true,
                 showLabel: false,
               ),
               const SizedBox(height: 16),
               Row(
-                children: const [
+                children: [
                   Expanded(
                     child: ProfileDisplayField(
                       label: 'CITY',
-                      value: 'Jakarta',
+                      value: city,
                     ),
                   ),
-                  SizedBox(width: 16),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: ProfileDisplayField(
                       label: 'POSTAL CODE',
-                      value: '12730',
+                      value: postalCode,
                     ),
                   ),
                 ],
@@ -95,13 +119,13 @@ class ProfileView extends StatelessWidget {
                 trailing: Switch(
                   value: true,
                   onChanged: (bool value) {},
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ),
-              ProfileSettingRow(
+              const ProfileSettingRow(
                 icon: Icons.language,
                 title: 'Language',
-                trailing: const Text(
+                trailing: Text(
                   'English (US)',
                   style: TextStyle(
                     color: AppColors.primary,

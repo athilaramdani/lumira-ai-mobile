@@ -9,9 +9,8 @@ import '../widgets/doctor_header.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/doctor_bottom_nav_bar.dart';
-import 'package:lumira_ai_mobile/features/landing/landing_page.dart';
 import '../../../chat/presentation/pages/chat_list_page.dart';
-
+import '../widgets/profile_view.dart';
 class PatientData {
   final String name;
   final String id;
@@ -97,74 +96,6 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
     }
   }
 
-  void _showLogoutDialog() {
-    setState(() {
-      _currentIndex = 4; // Highlight logout icon during dialog
-    });
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Center(
-          child: Text(
-            'Are You Sure Want To Leave?',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        content: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            SizedBox(
-              width: 100,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LandingPage()),
-                    (route) => false,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text('Yes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            SizedBox(
-              width: 100,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _currentIndex = 2; // Return to grid or previous index
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text('No', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -176,38 +107,40 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
       body: SafeArea(
         child: Column(
           children: [
-            DoctorHeader(doctorName: doctorName),
+            if (_currentIndex != 4) DoctorHeader(doctorName: doctorName),
             Expanded(
               child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
-                      child: Text(
-                        'Hi, Dr. $doctorName!',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                child: _currentIndex == 4
+                    ? const ProfileView()
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
+                            child: Text(
+                              'Hi, Dr. $doctorName!',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          _buildStatCards(),
+                          const SizedBox(height: 10),
+                          CustomSearchBar(
+                            hintText: 'Search Patient...',
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          _buildPatientList(),
+                          const SizedBox(height: 20),
+                        ],
                       ),
-                    ),
-                    _buildStatCards(),
-                    const SizedBox(height: 10),
-                    CustomSearchBar(
-                      hintText: 'Search Patient...',
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildPatientList(),
-                    const SizedBox(height: 20),
-                  ],
-                ),
               ),
             ),
           ],
@@ -216,16 +149,12 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
       bottomNavigationBar: DoctorBottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (index == 4) {
-            _showLogoutDialog();
-            return;
-          }
           setState(() {
             _currentIndex = index;
           });
         },
       ),
-      floatingActionButton: _buildChatFAB(),
+      floatingActionButton: _currentIndex != 4 ? _buildChatFAB() : null,
     );
   }
 

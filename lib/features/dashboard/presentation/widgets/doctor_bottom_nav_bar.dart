@@ -36,7 +36,7 @@ class DoctorBottomNavBar extends StatelessWidget {
           _buildNavItem(Icons.check_circle_outline, 1, isCircle: true),
           _buildNavItem(Icons.grid_view_rounded, 2, isCircle: false),
           _buildNavItem(Icons.warning_amber_rounded, 3, isCircle: true),
-          _buildNavItem(Icons.logout_rounded, 4, isCircle: true),
+          _buildNavItem(Icons.person_outline, 4, isCircle: true),
         ],
       ),
     );
