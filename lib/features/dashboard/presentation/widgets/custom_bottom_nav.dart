@@ -54,6 +54,14 @@ class CustomBottomNav extends StatelessWidget {
                   if (onTabSelected != null) onTabSelected!(2);
                 },
               ),
+              _buildNavItem(
+                icon: Icons.person, // Profile icon
+                label: 'Profile',
+                isActive: currentIndex == 3,
+                onTap: () {
+                  if (onTabSelected != null) onTabSelected!(3);
+                },
+              ),
             ],
           ),
         ),
