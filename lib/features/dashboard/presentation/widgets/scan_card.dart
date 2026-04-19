@@ -7,11 +7,25 @@ import 'package:lumira_ai_mobile/features/chat/presentation/pages/chat_page.dart
 class ScanCard extends StatelessWidget {
   final String scanId;
   final ScanStatus status;
+  final String? patientName;
+  final String? waitTime;
+  final String? queuePosition;
+  final String? doctorName;
+  final String? verifiedDate;
+  final String? verifiedTime;
+  final String? result;
 
   const ScanCard({
     super.key,
     required this.scanId,
     required this.status,
+    this.patientName,
+    this.waitTime,
+    this.queuePosition,
+    this.doctorName,
+    this.verifiedDate,
+    this.verifiedTime,
+    this.result,
   });
 
   @override
@@ -99,7 +113,7 @@ class ScanCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -107,8 +121,8 @@ class ScanCard extends StatelessWidget {
                 Icon(Icons.person, color: AppColors.primary, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Bacthiar',
-                  style: TextStyle(
+                  patientName ?? 'Patient',
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 14,
                   ),
@@ -118,9 +132,9 @@ class ScanCard extends StatelessWidget {
             SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.schedule, color: AppColors.primary, size: 20),
-                SizedBox(width: 8),
-                Text(
+                const Icon(Icons.schedule, color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
                   '~4 hours remaining',
                   style: TextStyle(
                     color: AppColors.textSecondary,
@@ -146,10 +160,10 @@ class ScanCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.primary),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Estimation wait time',
                   style: TextStyle(
                     color: AppColors.primary,
@@ -157,10 +171,10 @@ class ScanCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  '01:39:45',
-                  style: TextStyle(
+                  waitTime ?? '01:39:45',
+                  style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.w400,
@@ -197,9 +211,9 @@ class ScanCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  '3',
-                  style: TextStyle(
+                Text(
+                  queuePosition ?? '3',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -240,9 +254,9 @@ class ScanCard extends StatelessWidget {
                         backgroundImage: AssetImage(AppAssets.doctor),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'Dr. Rani',
-                        style: TextStyle(
+                      Text(
+                        doctorName ?? 'Dr. Rani',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -251,12 +265,12 @@ class ScanCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Verified Date',
                         style: TextStyle(
                           color: AppColors.primary,
@@ -264,18 +278,18 @@ class ScanCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        '20 March 2026',
-                        style: TextStyle(
+                        verifiedDate ?? '20 March 2026',
+                        style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        '19:53 PM',
-                        style: TextStyle(
+                        verifiedTime ?? '19:53 PM',
+                        style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 10,
                         ),
@@ -316,10 +330,10 @@ class ScanCard extends StatelessWidget {
                     color: AppColors.success,
                     borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
                   ),
-                  child: const Text(
-                    'Normal',
+                  child: Text(
+                    result ?? 'Normal',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
