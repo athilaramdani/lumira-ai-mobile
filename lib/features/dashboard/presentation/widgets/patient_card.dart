@@ -170,7 +170,11 @@ class PatientCard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const MedicalReviewPage(),
+                      builder: (context) => MedicalReviewPage(
+                        patientId: patientId,
+                        patientName: patientName,
+                        aiResult: aiResult,
+                      ),
                     ),
                   );
                 },

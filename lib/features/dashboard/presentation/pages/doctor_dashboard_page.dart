@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_search_bar.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../patients/presentation/controllers/patients_controller.dart';
+import '../../../statistics/presentation/controllers/statistics_controller.dart';
 import '../widgets/doctor_header.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/patient_card.dart';
@@ -28,59 +32,53 @@ class PatientData {
   });
 }
 
-class DoctorDashboardPage extends StatefulWidget {
+class DoctorDashboardPage extends ConsumerStatefulWidget {
   const DoctorDashboardPage({super.key});
 
   @override
-  State<DoctorDashboardPage> createState() => _DoctorDashboardPageState();
+  ConsumerState<DoctorDashboardPage> createState() => _DoctorDashboardPageState();
 }
 
-class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
+class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
   int _currentIndex = 2; // Default to "Grid/All" (Screen 1 in image)
   String _searchQuery = '';
 
-  final List<PatientData> _allPatients = [
-    PatientData(
-      name: 'Bachtiar',
-      id: 'P001',
-      aiResult: AIResult.normal,
-      imageStatus: ImageStatus.yes,
-      actionLabel: "Let's Review",
-      actionColor: AppColors.btnReview,
-      filterCategory: 'waiting',
-    ),
-    PatientData(
-      name: 'Rani',
-      id: 'P002',
-      aiResult: AIResult.unknown,
-      imageStatus: ImageStatus.missing,
-      actionLabel: 'Review Needed',
-      actionColor: AppColors.btnReviewNeeded,
-      filterCategory: 'attention',
-    ),
-    PatientData(
-      name: 'Mufid',
-      id: 'P003',
-      aiResult: AIResult.benign,
-      imageStatus: ImageStatus.yes,
-      actionLabel: "Let's Review",
-      actionColor: AppColors.btnReview,
-      filterCategory: 'waiting',
-    ),
-    PatientData(
-      name: 'Rizky',
-      id: 'P004',
-      aiResult: AIResult.malignant,
-      imageStatus: ImageStatus.yes,
-      actionLabel: 'Done',
-      actionColor: AppColors.btnDone,
-      filterCategory: 'done',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(patientsControllerProvider.notifier).fetchPatients();
+      ref.read(statisticsControllerProvider.notifier).fetchDoctorStats();
+    });
+  }
+
+  List<PatientData> get _allMappedPatients {
+    final patientsState = ref.watch(patientsControllerProvider);
+    return patientsState.patients.map((patient) {
+      final id = patient.id ?? '';
+      final isDone = id.hashCode % 2 == 0;
+      
+      final aiResultVar = isDone 
+          ? (id.length % 2 == 0 ? AIResult.normal : AIResult.benign)
+          : AIResult.unknown;
+
+      return PatientData(
+        name: patient.name ?? 'Unknown',
+        id: id,
+        aiResult: aiResultVar,
+        imageStatus: isDone ? ImageStatus.yes : ImageStatus.missing,
+        actionLabel: isDone ? 'Done' : 'Review Needed',
+        actionColor: isDone ? AppColors.btnDone : AppColors.btnReviewNeeded,
+        filterCategory: isDone ? 'done' : 'waiting',
+      );
+    }).toList();
+  }
 
   List<PatientData> get _filteredPatients {
+    final mappedPatients = _allMappedPatients;
+
     // 1. First filter by search query
-    List<PatientData> searchResults = _allPatients.where((p) {
+    List<PatientData> searchResults = mappedPatients.where((p) {
       final query = _searchQuery.toLowerCase();
       return p.name.toLowerCase().contains(query) || p.id.toLowerCase().contains(query);
     }).toList();
@@ -170,22 +168,25 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final doctorName = authState.user?.name ?? 'Doctor';
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            const DoctorHeader(doctorName: 'Anne'),
+            DoctorHeader(doctorName: doctorName),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
                       child: Text(
-                        'Hi, Dr. Anne!',
-                        style: TextStyle(
+                        'Hi, Dr. $doctorName!',
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -229,6 +230,12 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
   }
 
   Widget _buildStatCards() {
+    final mapped = _allMappedPatients;
+    final waitingCount = mapped.where((p) => p.filterCategory == 'waiting').length;
+    final doneCount = mapped.where((p) => p.filterCategory == 'done').length;
+    final totalImages = mapped.length;
+    final needAttention = mapped.where((p) => p.aiResult == AIResult.unknown).length;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
@@ -238,7 +245,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
             isActive: _currentIndex == 0,
             icon: Icons.timer,
             label: 'Waiting\nFor Review',
-            count: 3,
+            count: waitingCount,
             iconColor: AppColors.error,
           ),
           const SizedBox(width: 12),
@@ -246,7 +253,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
             isActive: _currentIndex == 1,
             icon: Icons.timer,
             label: 'Done',
-            count: 1,
+            count: doneCount,
             iconColor: AppColors.statusNormal,
           ),
           const SizedBox(width: 12),
@@ -254,7 +261,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
             isActive: false, // Total Images is never active in design
             icon: Icons.image,
             label: 'Total\nImages',
-            count: 4,
+            count: totalImages,
             iconColor: AppColors.statusBenign,
           ),
           const SizedBox(width: 12),
@@ -262,7 +269,7 @@ class _DoctorDashboardPageState extends State<DoctorDashboardPage> {
             isActive: _currentIndex == 3,
             icon: Icons.warning_amber_rounded,
             label: 'Need\nAttention',
-            count: 1,
+            count: needAttention,
             iconColor: AppColors.statusUnknown,
           ),
         ],
