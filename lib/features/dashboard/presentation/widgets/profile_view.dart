@@ -119,7 +119,7 @@ class ProfileView extends ConsumerWidget {
                 trailing: Switch(
                   value: true,
                   onChanged: (bool value) {},
-                  activeThumbColor: AppColors.primary,
+                  activeColor: AppColors.primary,
                 ),
               ),
               const ProfileSettingRow(
