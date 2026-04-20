@@ -190,7 +190,7 @@ class _LandingPage1State extends State<LandingPage1>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
-                  color: AppColors.textSecondary.withValues(alpha: 0.8),
+                  color: AppColors.textSecondary.withOpacity(0.8),
                   letterSpacing: 0.5,
                 ),
               ),

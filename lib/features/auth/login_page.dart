@@ -314,7 +314,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                       child: Container(
                                         margin: const EdgeInsets.only(top: 4),
                                         decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.1),
+                                          color: AppColors.primary.withOpacity(0.1),
                                           shape: BoxShape.circle,
                                         ),
                                         child: IconButton(
@@ -426,7 +426,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                             backgroundColor: AppColors.primary,
                                             foregroundColor: Colors.white,
                                             disabledBackgroundColor:
-                                                AppColors.primary.withValues(alpha: 0.6),
+                                                AppColors.primary.withOpacity(0.6),
                                             disabledForegroundColor: Colors.white70,
                                             padding: const EdgeInsets.symmetric(
                                                 vertical: 14),
@@ -481,7 +481,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
               return Opacity(
                 opacity: _overlayFadeAnimation.value,
                 child: Container(
-                  color: Colors.white.withValues(alpha: 0.85),
+                  color: Colors.white.withOpacity(0.85),
                   child: Center(
                     child: authState.isSuccess
                         ? _buildSuccessOverlay()
@@ -504,7 +504,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.15),
+            color: AppColors.primary.withOpacity(0.15),
             blurRadius: 30,
             spreadRadius: 5,
           ),
@@ -553,7 +553,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.success.withValues(alpha: 0.2),
+              color: AppColors.success.withOpacity(0.2),
               blurRadius: 30,
               spreadRadius: 5,
             ),

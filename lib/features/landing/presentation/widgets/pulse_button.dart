@@ -84,7 +84,7 @@ class _PulseButtonState extends State<PulseButton>
               borderRadius: widget.isCircular ? null : BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: widget.glowColor.withValues(alpha: _glowAnimation.value),
+                  color: widget.glowColor.withOpacity(_glowAnimation.value),
                   blurRadius: 20,
                   spreadRadius: 2,
                   offset: const Offset(0, 4),

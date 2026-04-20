@@ -10,8 +10,10 @@ import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/cl
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/doctor_diagnosis_card.dart';
 import 'medical_review_summary_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/patient_card.dart';
+import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/doctor_dashboard_page.dart';
 
 class MedicalReviewPage extends ConsumerStatefulWidget {
   final String patientId;
@@ -35,12 +37,19 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(dashboardNavIndexProvider);
     final authState = ref.watch(authControllerProvider);
     final doctorName = authState.user?.name ?? 'Doctor';
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: GoogleFonts.openSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
         child: Column(
           children: [
             DoctorHeader(doctorName: doctorName),
@@ -78,12 +87,12 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
         ),
       ),
       bottomNavigationBar: DoctorBottomNavBar(
-        currentIndex: 2, // Assuming Medical Review is under Category/Grid
+        currentIndex: currentIndex,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          }
+          ref.read(dashboardNavIndexProvider.notifier).state = index;
+          Navigator.of(context).popUntil((route) => route.isFirst);
         },
+      ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PatientChatMessage {
   final String text;
@@ -124,8 +125,14 @@ class _PatientChatPageState extends State<PatientChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: GoogleFonts.openSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -159,6 +166,7 @@ class _PatientChatPageState extends State<PatientChatPage> {
           _buildActionButtons(),
           _buildInputArea(),
         ],
+      ),
       ),
     );
   }

@@ -8,6 +8,9 @@ import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/re
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/result_by_doctor_card.dart';
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/classification_results_card.dart';
 
+import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/doctor_diagnosis_card.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 class MedicalReviewSummaryPage extends StatefulWidget {
   final ClassificationStatus aiResult;
 
@@ -23,8 +26,14 @@ class MedicalReviewSummaryPage extends StatefulWidget {
 class _MedicalReviewSummaryPageState extends State<MedicalReviewSummaryPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: GoogleFonts.openSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -87,6 +96,7 @@ class _MedicalReviewSummaryPageState extends State<MedicalReviewSummaryPage> {
       bottomNavigationBar: DoctorBottomNavBar(
         currentIndex: 2,
         onTap: (index) {},
+      ),
       ),
     );
   }

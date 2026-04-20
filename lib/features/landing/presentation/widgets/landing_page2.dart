@@ -99,7 +99,7 @@ class _LandingPage2State extends State<LandingPage2>
                   height: 600,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.primaryLighter.withValues(alpha: 0.6),
+                    color: AppColors.primaryLighter.withOpacity(0.6),
                   ),
                 ),
               ),
