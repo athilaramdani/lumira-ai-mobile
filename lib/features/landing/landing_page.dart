@@ -160,7 +160,7 @@ class _LandingPageState extends State<LandingPage>
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  backgroundColor: Colors.black.withValues(alpha: 0.05),
+                  backgroundColor: Colors.black.withOpacity(0.05),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),

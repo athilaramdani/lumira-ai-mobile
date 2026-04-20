@@ -7,6 +7,7 @@ class StatCard extends StatelessWidget {
   final int count;
   final Color iconColor;
   final bool isActive;
+  final VoidCallback? onTap;
 
   const StatCard({
     super.key,
@@ -15,25 +16,27 @@ class StatCard extends StatelessWidget {
     required this.count,
     required this.iconColor,
     this.isActive = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 90,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.primary : AppColors.surface,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
         clipBehavior: Clip.none,
         children: [
           Center(
@@ -67,19 +70,19 @@ class StatCard extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: -5,
-            right: -2,
+            top: -1,
+            right: 4,
             child: Text(
               '$count',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: isActive ? Colors.white.withOpacity(0.8) : AppColors.textSecondary.withOpacity(0.5),
+                color: isActive ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ),
         ],
       ),
-    );
+    ));
   }
 }

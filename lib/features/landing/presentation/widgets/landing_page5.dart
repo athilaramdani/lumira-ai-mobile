@@ -127,7 +127,7 @@ class _LandingPage5State extends State<LandingPage5>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.accentPinkBg.withValues(alpha: 0.7),
+                      AppColors.accentPinkBg.withOpacity(0.7),
                       AppColors.accentPinkLight,
                       Colors.white,
                     ],
@@ -153,7 +153,7 @@ class _LandingPage5State extends State<LandingPage5>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: Colors.white.withOpacity(0.8),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -293,7 +293,7 @@ class _LandingPage5State extends State<LandingPage5>
             description,
             style: TextStyle(
               fontSize: 11,
-              color: AppColors.textSecondary.withValues(alpha: 0.8),
+              color: AppColors.textSecondary.withOpacity(0.8),
               height: 1.3,
             ),
           ),
@@ -312,7 +312,7 @@ class _LandingPage5State extends State<LandingPage5>
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accentPink.withValues(alpha: 0.12),
+                color: AppColors.accentPink.withOpacity(0.12),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
