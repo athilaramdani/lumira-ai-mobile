@@ -31,7 +31,7 @@ class AppColors {
   static const Color btnReview = Color(0xFF0398F6);
   static const Color btnReviewNeeded = Color(0xFFFF9800);
   static const Color btnDone = Color(0xFF4CAF50);
-  static const Color btnChat = Color(0xFF9C27B0);
+  static const Color btnChat = Color(0xFF0398F6); // Light Blue
   
   // --- Status Colors ---
   static const Color statusNormal = Color(0xFF4CAF50);
