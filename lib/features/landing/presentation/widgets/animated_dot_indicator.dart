@@ -52,7 +52,7 @@ class AnimatedDotIndicator extends StatelessWidget {
             boxShadow: factor > 0.5
                 ? [
                     BoxShadow(
-                      color: activeColor.withValues(alpha: 0.3 * factor),
+                      color: activeColor.withOpacity(0.3 * factor),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),

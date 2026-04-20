@@ -129,7 +129,7 @@ class _LandingPage4State extends State<LandingPage4>
                 height: 300,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primaryLightest.withValues(alpha: 0.5),
+                  color: AppColors.primaryLightest.withOpacity(0.5),
                 ),
               ),
             ),
@@ -170,7 +170,7 @@ class _LandingPage4State extends State<LandingPage4>
                               'A simple process for an accurate diagnosis',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.primary.withValues(alpha: 0.7),
+                                color: AppColors.primary.withOpacity(0.7),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -278,7 +278,7 @@ class _LandingPage4State extends State<LandingPage4>
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.06),
+              color: AppColors.primary.withOpacity(0.06),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),

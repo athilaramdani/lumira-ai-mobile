@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_search_bar.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
@@ -38,8 +39,9 @@ class DoctorDashboardPage extends ConsumerStatefulWidget {
   ConsumerState<DoctorDashboardPage> createState() => _DoctorDashboardPageState();
 }
 
+final dashboardNavIndexProvider = StateProvider<int>((ref) => 2);
+
 class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
-  int _currentIndex = 2; // Default to "Grid/All" (Screen 1 in image)
   String _searchQuery = '';
 
   @override
@@ -82,8 +84,10 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
       return p.name.toLowerCase().contains(query) || p.id.toLowerCase().contains(query);
     }).toList();
 
+    final currentIndex = ref.watch(dashboardNavIndexProvider);
+
     // 2. Then filter by category tab
-    switch (_currentIndex) {
+    switch (currentIndex) {
       case 0:
         return searchResults.where((p) => p.filterCategory == 'waiting').toList();
       case 1:
@@ -99,18 +103,25 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(dashboardNavIndexProvider);
     final authState = ref.watch(authControllerProvider);
     final doctorName = authState.user?.name ?? 'Doctor';
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: GoogleFonts.openSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
         child: Column(
           children: [
-            if (_currentIndex != 4) DoctorHeader(doctorName: doctorName),
+            if (currentIndex != 4) DoctorHeader(doctorName: doctorName),
             Expanded(
               child: SingleChildScrollView(
-                child: _currentIndex == 4
+                child: currentIndex == 4
                     ? const ProfileView()
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,7 +129,7 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
                             child: Text(
-                              'Hi, Dr. $doctorName!',
+                              'Hi, ${doctorName.startsWith('Dr') ? doctorName : 'Dr. $doctorName'}!',
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -147,61 +158,83 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
         ),
       ),
       bottomNavigationBar: DoctorBottomNavBar(
-        currentIndex: _currentIndex,
+        currentIndex: currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          ref.read(dashboardNavIndexProvider.notifier).state = index;
         },
       ),
-      floatingActionButton: _currentIndex != 4 ? _buildChatFAB() : null,
+      floatingActionButton: currentIndex != 4 ? _buildChatFAB() : null,
+      ),
     );
   }
 
   Widget _buildStatCards() {
+    final currentIndex = ref.watch(dashboardNavIndexProvider);
     final mapped = _allMappedPatients;
     final waitingCount = mapped.where((p) => p.filterCategory == 'waiting').length;
     final doneCount = mapped.where((p) => p.filterCategory == 'done').length;
     final totalImages = mapped.length;
     final needAttention = mapped.where((p) => p.aiResult == AIResult.unknown).length;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      child: Row(
-        children: [
-          StatCard(
-            isActive: _currentIndex == 0,
-            icon: Icons.timer,
-            label: 'Waiting\nFor Review',
-            count: waitingCount,
-            iconColor: AppColors.error,
-          ),
-          const SizedBox(width: 12),
-          StatCard(
-            isActive: _currentIndex == 1,
-            icon: Icons.timer,
-            label: 'Done',
-            count: doneCount,
-            iconColor: AppColors.statusNormal,
-          ),
-          const SizedBox(width: 12),
-          StatCard(
-            isActive: false, // Total Images is never active in design
-            icon: Icons.image,
-            label: 'Total\nImages',
-            count: totalImages,
-            iconColor: AppColors.statusBenign,
-          ),
-          const SizedBox(width: 12),
-          StatCard(
-            isActive: _currentIndex == 3,
-            icon: Icons.warning_amber_rounded,
-            label: 'Need\nAttention',
-            count: needAttention,
-            iconColor: AppColors.statusUnknown,
-          ),
-        ],
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: StatCard(
+                isActive: currentIndex == 0,
+                icon: Icons.timer_outlined,
+                label: 'Waiting\nFor Review',
+                count: waitingCount,
+                iconColor: AppColors.error,
+                onTap: () {
+                  ref.read(dashboardNavIndexProvider.notifier).state = 0;
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                isActive: currentIndex == 1,
+                icon: Icons.check_circle_outline,
+                label: 'Done',
+                count: doneCount,
+                iconColor: AppColors.statusNormal,
+                onTap: () {
+                  ref.read(dashboardNavIndexProvider.notifier).state = 1;
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                isActive: currentIndex == 2,
+                icon: Icons.grid_view_rounded,
+                label: 'Total\nImages',
+                count: totalImages,
+                iconColor: AppColors.statusBenign,
+                onTap: () {
+                  ref.read(dashboardNavIndexProvider.notifier).state = 2;
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: StatCard(
+                isActive: currentIndex == 3,
+                icon: Icons.warning_amber_rounded,
+                label: 'Need\nAttention',
+                count: needAttention,
+                iconColor: AppColors.statusUnknown,
+                onTap: () {
+                  ref.read(dashboardNavIndexProvider.notifier).state = 3;
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -238,11 +271,11 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
-            icon: const Icon(Icons.email_outlined, color: Colors.black),
+            icon: const Icon(Icons.email_outlined, color: Colors.white),
             label: const Text(
               'Chat',
               style: TextStyle(
-                color: Colors.black,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
