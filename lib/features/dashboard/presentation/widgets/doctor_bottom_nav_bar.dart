@@ -30,13 +30,10 @@ class DoctorBottomNavBar extends StatelessWidget {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildNavItem(Icons.timer_outlined, 0, isCircle: true),
-          _buildNavItem(Icons.check_circle_outline, 1, isCircle: true),
-          _buildNavItem(Icons.grid_view_rounded, 2, isCircle: false),
-          _buildNavItem(Icons.warning_amber_rounded, 3, isCircle: true),
-          _buildNavItem(Icons.person_outline, 4, isCircle: true),
+          _buildNavItem(Icons.home, 0, isCircle: false),
+          _buildNavItem(Icons.person_outline, 1, isCircle: true),
         ],
       ),
     );

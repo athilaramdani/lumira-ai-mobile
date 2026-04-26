@@ -37,7 +37,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentIndex = ref.watch(dashboardNavIndexProvider);
+    final currentIndex = ref.watch(bottomNavIndexProvider);
     final authState = ref.watch(authControllerProvider);
     final doctorName = authState.user?.name ?? 'Doctor';
 
@@ -89,7 +89,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
       bottomNavigationBar: DoctorBottomNavBar(
         currentIndex: currentIndex,
         onTap: (index) {
-          ref.read(dashboardNavIndexProvider.notifier).state = index;
+          ref.read(bottomNavIndexProvider.notifier).state = index;
           Navigator.of(context).popUntil((route) => route.isFirst);
         },
       ),
