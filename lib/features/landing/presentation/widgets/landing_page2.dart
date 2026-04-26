@@ -2,21 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Landing Page 2 — Doctor Image dengan background semi-circle
-///
-/// Animasi:
-/// 1. Parallax doctor image (bergerak lebih lambat saat swipe)
-/// 2. Fade-in logo di bagian atas
-/// 3. Scale-in semi-circle background
 class LandingPage2 extends StatefulWidget {
-  /// Offset halaman dari PageController, digunakan untuk parallax.
-  /// Nilai 0.0 = halaman tepat di tengah.
   final double pageOffset;
-
-  const LandingPage2({
-    super.key,
-    required this.pageOffset,
-  });
+  const LandingPage2({super.key, required this.pageOffset});
 
   @override
   State<LandingPage2> createState() => _LandingPage2State();
@@ -25,39 +13,27 @@ class LandingPage2 extends StatefulWidget {
 class _LandingPage2State extends State<LandingPage2>
     with TickerProviderStateMixin {
   late final AnimationController _enterController;
-  late final Animation<double> _logoFadeAnimation;
-  late final Animation<double> _circleScaleAnimation;
-  late final Animation<double> _doctorFadeAnimation;
-
-  bool _hasAnimated = false;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
-
     _enterController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
+        vsync: this, duration: const Duration(milliseconds: 1200));
 
-    _logoFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _enterController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
       ),
     );
 
-    _circleScaleAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+        .animate(
       CurvedAnimation(
         parent: _enterController,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _doctorFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
       ),
     );
   }
@@ -65,9 +41,7 @@ class _LandingPage2State extends State<LandingPage2>
   @override
   void didUpdateWidget(covariant LandingPage2 oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Trigger animasi saat halaman hampir terlihat (offset mendekati 0)
-    if (!_hasAnimated && widget.pageOffset.abs() < 0.5) {
-      _hasAnimated = true;
+    if (widget.pageOffset.abs() < 0.5) {
       _enterController.forward();
     }
   }
@@ -80,65 +54,119 @@ class _LandingPage2State extends State<LandingPage2>
 
   @override
   Widget build(BuildContext context) {
-    // Parallax factor — doctor bergerak 40% lebih lambat dari page
-    final double parallaxOffset = widget.pageOffset * 80;
+    final parallaxOffset = widget.pageOffset * 100;
 
-    return AnimatedBuilder(
-      animation: _enterController,
-      builder: (context, _) {
-        return Stack(
-          children: [
-            // Background semi-circle — scale-in animation
-            Positioned(
-              bottom: -200,
-              left: -100,
-              right: -100,
-              child: Transform.scale(
-                scale: _circleScaleAnimation.value,
-                child: Container(
-                  height: 600,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primaryLighter.withOpacity(0.6),
-                  ),
-                ),
+    return Stack(
+      children: [
+        // Blue background that curves at bottom left
+        Positioned.fill(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF8FD6F8), Color(0xFFCBEBFA)], // approximates light blue from image
               ),
             ),
-            // Content
-            SafeArea(
-              child: Column(
-                children: [
-                  const SizedBox(height: 80),
-                  // Logo — fade-in
-                  FadeTransition(
-                    opacity: _logoFadeAnimation,
-                    child: Center(
-                      child: Image.asset(AppAssets.logo, width: 120),
-                    ),
-                  ),
-                  const Spacer(),
-                  // Doctor image — parallax + fade
-                  Expanded(
-                    flex: 8,
-                    child: FadeTransition(
-                      opacity: _doctorFadeAnimation,
-                      child: Transform.translate(
-                        offset: Offset(parallaxOffset, 0),
-                        child: Center(
-                          child: Image.asset(
-                            AppAssets.doctor,
-                            fit: BoxFit.contain,
+          ),
+        ),
+        // White bottom curve
+        Positioned(
+          bottom: -150,
+          left: -100,
+          right: -100,
+          child: Container(
+            height: 350,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        
+        SafeArea(
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Badge "Powered By AI"
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.memory, color: AppColors.primary, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Powered By AI',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
                           ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Title
+                    const Text(
+                      'Early Detection of\nBreast Cancer with\nAI Technology',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Subtitle
+                    const SizedBox(
+                      width: 250,
+                      child: Text(
+                        'An AI-based mammogram analysis system that helps doctors provide more accurate and faster diagnoses for breast cancer treatment.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ],
-        );
-      },
+          ),
+        ),
+
+        // Parallax Doctor Image
+        Positioned(
+          bottom: 120, // space for pill/button
+          right: -20,
+          left: 50, // offset slightly
+          child: Transform.translate(
+            offset: Offset(parallaxOffset, 0),
+            child: Opacity(
+              opacity: (1 - widget.pageOffset.abs()).clamp(0.0, 1.0),
+              child: Image.asset(
+                AppAssets.doctor,
+                height: 450,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
