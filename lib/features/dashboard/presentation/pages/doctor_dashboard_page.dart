@@ -39,7 +39,8 @@ class DoctorDashboardPage extends ConsumerStatefulWidget {
   ConsumerState<DoctorDashboardPage> createState() => _DoctorDashboardPageState();
 }
 
-final dashboardNavIndexProvider = StateProvider<int>((ref) => 2);
+final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
+final dashboardFilterProvider = StateProvider<String>((ref) => 'all');
 
 class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
   String _searchQuery = '';
@@ -84,17 +85,17 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
       return p.name.toLowerCase().contains(query) || p.id.toLowerCase().contains(query);
     }).toList();
 
-    final currentIndex = ref.watch(dashboardNavIndexProvider);
+    final currentFilter = ref.watch(dashboardFilterProvider);
 
     // 2. Then filter by category tab
-    switch (currentIndex) {
-      case 0:
+    switch (currentFilter) {
+      case 'waiting':
         return searchResults.where((p) => p.filterCategory == 'waiting').toList();
-      case 1:
+      case 'done':
         return searchResults.where((p) => p.filterCategory == 'done').toList();
-      case 3:
+      case 'attention':
         return searchResults.where((p) => p.filterCategory == 'attention').toList();
-      case 2:
+      case 'all':
       default:
         return searchResults;
     }
@@ -103,7 +104,7 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentIndex = ref.watch(dashboardNavIndexProvider);
+    final currentIndex = ref.watch(bottomNavIndexProvider);
     final authState = ref.watch(authControllerProvider);
     final doctorName = authState.user?.name ?? 'Doctor';
 
@@ -118,10 +119,10 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
         body: SafeArea(
         child: Column(
           children: [
-            if (currentIndex != 4) DoctorHeader(doctorName: doctorName),
+            if (currentIndex == 0) DoctorHeader(doctorName: doctorName),
             Expanded(
               child: SingleChildScrollView(
-                child: currentIndex == 4
+                child: currentIndex == 1
                     ? const ProfileView()
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,16 +161,16 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
       bottomNavigationBar: DoctorBottomNavBar(
         currentIndex: currentIndex,
         onTap: (index) {
-          ref.read(dashboardNavIndexProvider.notifier).state = index;
+          ref.read(bottomNavIndexProvider.notifier).state = index;
         },
       ),
-      floatingActionButton: currentIndex != 4 ? _buildChatFAB() : null,
+      floatingActionButton: currentIndex == 0 ? _buildChatFAB() : null,
       ),
     );
   }
 
   Widget _buildStatCards() {
-    final currentIndex = ref.watch(dashboardNavIndexProvider);
+    final currentFilter = ref.watch(dashboardFilterProvider);
     final mapped = _allMappedPatients;
     final waitingCount = mapped.where((p) => p.filterCategory == 'waiting').length;
     final doneCount = mapped.where((p) => p.filterCategory == 'done').length;
@@ -184,52 +185,52 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
           children: [
             Expanded(
               child: StatCard(
-                isActive: currentIndex == 0,
+                isActive: currentFilter == 'waiting',
                 icon: Icons.timer_outlined,
                 label: 'Waiting\nFor Review',
                 count: waitingCount,
                 iconColor: AppColors.error,
                 onTap: () {
-                  ref.read(dashboardNavIndexProvider.notifier).state = 0;
+                  ref.read(dashboardFilterProvider.notifier).state = 'waiting';
                 },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: StatCard(
-                isActive: currentIndex == 1,
+                isActive: currentFilter == 'done',
                 icon: Icons.check_circle_outline,
                 label: 'Done',
                 count: doneCount,
                 iconColor: AppColors.statusNormal,
                 onTap: () {
-                  ref.read(dashboardNavIndexProvider.notifier).state = 1;
+                  ref.read(dashboardFilterProvider.notifier).state = 'done';
                 },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: StatCard(
-                isActive: currentIndex == 2,
+                isActive: currentFilter == 'all',
                 icon: Icons.grid_view_rounded,
                 label: 'Total\nImages',
                 count: totalImages,
                 iconColor: AppColors.statusBenign,
                 onTap: () {
-                  ref.read(dashboardNavIndexProvider.notifier).state = 2;
+                  ref.read(dashboardFilterProvider.notifier).state = 'all';
                 },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: StatCard(
-                isActive: currentIndex == 3,
+                isActive: currentFilter == 'attention',
                 icon: Icons.warning_amber_rounded,
                 label: 'Need\nAttention',
                 count: needAttention,
                 iconColor: AppColors.statusUnknown,
                 onTap: () {
-                  ref.read(dashboardNavIndexProvider.notifier).state = 3;
+                  ref.read(dashboardFilterProvider.notifier).state = 'attention';
                 },
               ),
             ),
