@@ -52,7 +52,7 @@ class ReviewControls extends StatelessWidget {
               ),
               child: Slider(
                 value: sliderValue,
-                onChanged: onSliderChanged,
+                onChanged: gradCamValue ? onSliderChanged : null,
               ),
             ),
           ),
