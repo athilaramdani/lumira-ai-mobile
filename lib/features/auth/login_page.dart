@@ -6,16 +6,6 @@ import 'presentation/controllers/auth_controller.dart';
 import '../dashboard/presentation/pages/doctor_dashboard_page.dart';
 import '../dashboard/presentation/pages/dashboard_page.dart';
 
-/// Login Page — Sesuai desain Figma
-///
-/// Features:
-/// - Doctor image di atas dengan gradient background
-/// - Form email + password dengan validasi inline
-/// - Loading state dengan overlay & spinner via Riverpod
-/// - Success state dengan checkmark overlay via Riverpod
-/// - Staggered fade-in animations
-/// - Responsive layout dengan MediaQuery
-/// - Keyboard handling (auto-scroll)
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -30,18 +20,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  // --- Animasi masuk ---
+  // Animations
   late final AnimationController _enterController;
-  late final Animation<double> _doctorFadeAnimation;
-  late final Animation<Offset> _doctorSlideAnimation;
-  late final Animation<double> _emailFadeAnimation;
-  late final Animation<Offset> _emailSlideAnimation;
-  late final Animation<double> _passwordFadeAnimation;
-  late final Animation<Offset> _passwordSlideAnimation;
-  late final Animation<double> _buttonFadeAnimation;
-  late final Animation<Offset> _buttonSlideAnimation;
-
-  // --- Loading overlay animation ---
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
   late final AnimationController _loadingOverlayController;
   late final Animation<double> _overlayFadeAnimation;
 
@@ -51,78 +33,26 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
     _enterController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1000),
     );
 
-    // Doctor image (0.0 → 0.4) — slide from top + fade
-    _doctorFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    // Slide up from bottom
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _enterController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+        curve: Curves.easeOutCubic,
       ),
     );
-    _doctorSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, -0.15),
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.4),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
         parent: _enterController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
+        curve: Curves.easeOutCubic,
       ),
     );
 
-    // Email field (0.2 → 0.5)
-    _emailFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.2, 0.5, curve: Curves.easeOutCubic),
-      ),
-    );
-    _emailSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.2, 0.5, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    // Password field (0.35 → 0.65)
-    _passwordFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.35, 0.65, curve: Curves.easeOutCubic),
-      ),
-    );
-    _passwordSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.35, 0.65, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    // Login button (0.5 → 0.8)
-    _buttonFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.5, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
-    _buttonSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _enterController,
-        curve: const Interval(0.5, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    // Loading overlay
     _loadingOverlayController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -134,7 +64,6 @@ class _LoginPageState extends ConsumerState<LoginPage>
       ),
     );
 
-    // Mulai animasi masuk
     _enterController.forward();
   }
 
@@ -170,8 +99,6 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-
-    // Trigger login via Riverpod controller
     await ref.read(authControllerProvider.notifier).login(
       _emailController.text,
       _passwordController.text,
@@ -224,10 +151,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final bool isKeyboardOpen = bottomInset > 0;
-    final topImageHeight = size.height * 0.38;
+    final topImageHeight = size.height * 0.40;
 
-    // Listen to Auth State
     ref.listen(authControllerProvider, (previous, next) {
       if (next.isLoading) {
         _loadingOverlayController.forward();
@@ -240,12 +165,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
           ),
         );
       } else if (next.isSuccess) {
-        // Overlay sudah muncul karena isLoading sebelumnya true
-        // Tunggu sebentar untuk sukses animation lalu pindah halaman
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) {
             _loadingOverlayController.reverse();
-            
             final role = next.user?.role;
             if (role == 'patient' || role == 'Patient') {
               Navigator.pushReplacement(
@@ -269,219 +191,202 @@ class _LoginPageState extends ConsumerState<LoginPage>
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Main content
-          AnimatedBuilder(
-            animation: _enterController,
-            builder: (context, _) {
-              return SingleChildScrollView(
-                physics: isKeyboardOpen
-                    ? const AlwaysScrollableScrollPhysics()
-                    : const NeverScrollableScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: size.height,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // === Top Section: Doctor Image ===
-                        SlideTransition(
-                          position: _doctorSlideAnimation,
-                          child: FadeTransition(
-                            opacity: _doctorFadeAnimation,
+          SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            physics: const ClampingScrollPhysics(),
+            child: Column(
+              children: [
+                // Top Doctor Image & Gradient
+                SizedBox(
+                  height: topImageHeight,
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      // Gradient background
+                      Positioned.fill(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFCBEBFA), Colors.white],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Doctor image with smooth fade
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: ShaderMask(
+                          shaderCallback: (rect) {
+                            return const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.black, Colors.black, Colors.transparent],
+                              stops: [0.0, 0.8, 1.0],
+                            ).createShader(rect);
+                          },
+                          blendMode: BlendMode.dstIn,
+                          child: Image.asset(
+                            AppAssets.doctor,
+                            height: topImageHeight * 0.9,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      // Custom Back Button
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+                          child: InkWell(
+                            onTap: () => Navigator.pop(context),
+                            borderRadius: BorderRadius.circular(20),
                             child: Container(
-                              height: topImageHeight,
+                              padding: const EdgeInsets.all(8),
                               decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.primaryLightest,
-                                    Colors.white,
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
+                                color: Colors.white,
+                                shape: BoxShape.circle,
                               ),
-                              child: SafeArea(
-                                bottom: false,
-                                child: Stack(
-                                  alignment: Alignment.bottomCenter,
-                                  children: [
-                                    // Back button
-                                    Positioned(
-                                      top: 0,
-                                      left: 10,
-                                      child: Container(
-                                        margin: const EdgeInsets.only(top: 4),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.arrow_back_ios_new,
-                                            color: AppColors.primary,
-                                            size: 20,
-                                          ),
-                                          onPressed: () => Navigator.pop(context),
-                                        ),
-                                      ),
-                                    ),
-                                    // Doctor image
-                                    Positioned(
-                                      bottom: 0,
-                                      child: Image.asset(
-                                        AppAssets.doctor,
-                                        height: topImageHeight * 0.85,
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              child: const Icon(
+                                Icons.arrow_back_ios_new,
+                                color: AppColors.primary,
+                                size: 18,
                               ),
                             ),
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+                ),
 
-                        // === Form Section ===
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  SizedBox(height: size.height * 0.03),
+                // Form Section (Slide up animated)
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 10),
 
-                                  // Email Field
-                                  SlideTransition(
-                                    position: _emailSlideAnimation,
-                                    child: FadeTransition(
-                                      opacity: _emailFadeAnimation,
-                                      child: TextFormField(
-                                        controller: _emailController,
-                                        keyboardType: TextInputType.emailAddress,
-                                        textInputAction: TextInputAction.next,
-                                        enabled: !authState.isLoading,
-                                        validator: _validateEmail,
-                                        autovalidateMode:
-                                            AutovalidateMode.onUserInteraction,
-                                        decoration: _buildInputDecoration(
-                                          label: 'Email',
-                                        ),
-                                      ),
-                                    ),
+
+                            // Email Field
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              enabled: !authState.isLoading,
+                              validator: _validateEmail,
+                              autovalidateMode: AutovalidateMode.onUserInteraction,
+                              decoration: _buildInputDecoration(label: 'Email'),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Password Field
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              enabled: !authState.isLoading,
+                              validator: _validatePassword,
+                              autovalidateMode: AutovalidateMode.onUserInteraction,
+                              onFieldSubmitted: (_) => _handleLogin(),
+                              decoration: _buildInputDecoration(
+                                label: 'Password',
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: AppColors.primary,
+                                    size: 20,
                                   ),
-
-                                  SizedBox(height: size.height * 0.025),
-
-                                  // Password Field
-                                  SlideTransition(
-                                    position: _passwordSlideAnimation,
-                                    child: FadeTransition(
-                                      opacity: _passwordFadeAnimation,
-                                      child: TextFormField(
-                                        controller: _passwordController,
-                                        obscureText: _obscurePassword,
-                                        textInputAction: TextInputAction.done,
-                                        enabled: !authState.isLoading,
-                                        validator: _validatePassword,
-                                        autovalidateMode:
-                                            AutovalidateMode.onUserInteraction,
-                                        onFieldSubmitted: (_) => _handleLogin(),
-                                        decoration: _buildInputDecoration(
-                                          label: 'Password',
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              _obscurePassword
-                                                  ? Icons.visibility_outlined
-                                                  : Icons.visibility_off_outlined,
-                                              color: AppColors.primary,
-                                              size: 20,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                _obscurePassword = !_obscurePassword;
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  const Spacer(),
-
-                                  // Login Button
-                                  SlideTransition(
-                                    position: _buttonSlideAnimation,
-                                    child: FadeTransition(
-                                      opacity: _buttonFadeAnimation,
-                                      child: SizedBox(
-                                        height: 50,
-                                        child: ElevatedButton(
-                                          onPressed: authState.isLoading ? null : _handleLogin,
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppColors.primary,
-                                            foregroundColor: Colors.white,
-                                            disabledBackgroundColor:
-                                                AppColors.primary.withOpacity(0.6),
-                                            disabledForegroundColor: Colors.white70,
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 14),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(25),
-                                            ),
-                                            elevation: 0,
-                                          ),
-                                          child: const Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                'Login',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              SizedBox(width: 8),
-                                              Icon(Icons.arrow_forward_ios,
-                                                  size: 14),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-
-                                ],
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
                               ),
                             ),
-                          ),
+
+                            const SizedBox(height: 40),
+
+                            // Get In Button
+                            SizedBox(
+                              height: 50,
+                              child: ElevatedButton(
+                                onPressed: authState.isLoading ? null : _handleLogin,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+                                  disabledForegroundColor: Colors.white70,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: authState.isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 3,
+                                        ),
+                                      )
+                                    : const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'LOGIN',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              letterSpacing: 1.0,
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
+                                        ],
+                                      ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 40),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              );
-            },
+              ],
+            ),
           ),
-
-          // === Loading / Success Overlay ===
+          
+          // Overlay States via Custom Animations
           AnimatedBuilder(
             animation: _loadingOverlayController,
             builder: (context, _) {
-              if (_loadingOverlayController.value == 0 && !authState.isLoading && !authState.isSuccess) {
+              if (_loadingOverlayController.value == 0 &&
+                  !authState.isLoading &&
+                  !authState.isSuccess) {
                 return const SizedBox.shrink();
               }
               return Opacity(
                 opacity: _overlayFadeAnimation.value,
                 child: Container(
-                  color: Colors.white.withOpacity(0.85),
+                  color: Colors.black.withOpacity(0.4),
                   child: Center(
                     child: authState.isSuccess
                         ? _buildSuccessOverlay()
@@ -498,15 +403,15 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   Widget _buildLoadingOverlay() {
     return Container(
-      padding: const EdgeInsets.all(40),
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.15),
-            blurRadius: 30,
-            spreadRadius: 5,
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 2,
           ),
         ],
       ),
@@ -514,20 +419,20 @@ class _LoginPageState extends ConsumerState<LoginPage>
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: 60,
-            height: 60,
+            width: 70,
+            height: 70,
             child: CircularProgressIndicator(
-              strokeWidth: 4,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              strokeWidth: 6,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.lightBlueAccent), // Matches image
             ),
           ),
-          SizedBox(height: 20),
+          SizedBox(height: 24),
           Text(
             'Loading',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800, // Matches image font weight
+              color: Colors.black87,
             ),
           ),
         ],
@@ -550,12 +455,12 @@ class _LoginPageState extends ConsumerState<LoginPage>
         padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: AppColors.success.withOpacity(0.2),
-              blurRadius: 30,
-              spreadRadius: 5,
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 2,
             ),
           ],
         ),
@@ -565,13 +470,13 @@ class _LoginPageState extends ConsumerState<LoginPage>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: const BoxDecoration(
-                color: AppColors.success,
+                color: Color(0xFF4cd964), // Green matched from figma mostly
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check,
                 color: Colors.white,
-                size: 36,
+                size: 40,
               ),
             ),
             const SizedBox(height: 16),
@@ -579,8 +484,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
               "You're Log in",
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+                color: Colors.black87,
               ),
             ),
           ],
