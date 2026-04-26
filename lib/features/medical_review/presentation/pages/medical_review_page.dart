@@ -118,14 +118,42 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
           Expanded(
             child: MedicalImageCard(
               label: 'Model Output (${widget.patientId.substring(0, 4)})',
-              imagePath: AppAssets.medicalScanModel,
+              imagePath: AppAssets.medicalScan,
+              overlay: _gradCam
+                  ? Opacity(
+                      opacity: _transparency,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          AppAssets.medicalScanModel,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                      ),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 15),
           Expanded(
             child: MedicalImageCard(
               label: 'Brush (${widget.patientId.substring(0, 4)})',
-              imagePath: AppAssets.medicalScanBrush,
+              imagePath: AppAssets.medicalScan,
+              overlay: _gradCam
+                  ? Opacity(
+                      opacity: _transparency,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          AppAssets.medicalScanBrush,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                      ),
+                    )
+                  : null,
             ),
           ),
         ],

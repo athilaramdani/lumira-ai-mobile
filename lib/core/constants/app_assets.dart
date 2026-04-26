@@ -12,6 +12,7 @@ class AppAssets {
   static const String doctorProfile = '$imagePath/doctor.png';
   static const String dummyProfile = '$imagePath/doctor.png';
   static const String doctorLogo = '$imagePath/logo.png'; // temporarily point to logo.png
+  static const String medicalScan = '$imagePath/medical_scan.png';
   static const String medicalScanModel = '$imagePath/medical_scan_model.png';
   static const String medicalScanBrush = '$imagePath/medical_scan_brush.png';
 
