@@ -11,6 +11,7 @@ import '../widgets/stat_card.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/doctor_bottom_nav_bar.dart';
 import '../../../chat/presentation/pages/chat_list_page.dart';
+import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../widgets/profile_view.dart';
 class PatientData {
   final String name;
@@ -255,6 +256,8 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
   }
 
   Widget _buildChatFAB() {
+    final unreadCount = ref.watch(unreadChatCountProvider);
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0),
       child: Stack(
@@ -281,25 +284,26 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
               ),
             ),
           ),
-          Positioned(
-            right: -5,
-            top: -5,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: const Text(
-                '2',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+          if (unreadCount > 0)
+            Positioned(
+              right: -5,
+              top: -5,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  unreadCount > 99 ? '99+' : unreadCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

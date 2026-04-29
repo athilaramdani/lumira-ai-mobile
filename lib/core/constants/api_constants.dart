@@ -19,6 +19,9 @@ class ApiConstants {
   static String reanalyzePatient(String id) => '/patients/$id/reanalyze';
   static String user(String id) => '/users/$id';
 
+  // Chat
+  static String chat(String patientId) => '/chat/$patientId';
+
   // Statistics & Activities
   static const String statsDashboard = '/stats/dashboard';
   static const String statsDoctor = '/stats/doctor';

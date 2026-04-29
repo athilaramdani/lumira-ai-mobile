@@ -1,64 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/widgets/custom_search_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'chat_page.dart';
+import '../../../patients/presentation/controllers/patients_controller.dart';
 import 'patient_chat_page.dart';
 
-class ChatItemData {
-  final String name;
-  final String id;
-  final String message;
-  final String time;
-  final bool isOnline;
-
-  ChatItemData({
-    required this.name,
-    required this.id,
-    required this.message,
-    required this.time,
-    required this.isOnline,
-  });
-}
-
-class ChatListPage extends StatefulWidget {
+class ChatListPage extends ConsumerStatefulWidget {
   const ChatListPage({super.key});
 
   @override
-  State<ChatListPage> createState() => _ChatListPageState();
+  ConsumerState<ChatListPage> createState() => _ChatListPageState();
 }
 
-class _ChatListPageState extends State<ChatListPage> {
+class _ChatListPageState extends ConsumerState<ChatListPage> {
   String _searchQuery = '';
 
-  final List<ChatItemData> _chats = [
-    ChatItemData(
-      name: 'Rizky',
-      id: 'P004',
-      message: 'Dok, hasil saya bagaimana ya?',
-      time: '12:15 AM',
-      isOnline: true,
-    ),
-    ChatItemData(
-      name: 'Rani',
-      id: 'P002',
-      message: 'Dok, apakah saya bisa konsultasi?',
-      time: '09:45 AM',
-      isOnline: true,
-    ),
-  ];
-
-  List<ChatItemData> get _filteredChats {
-    if (_searchQuery.isEmpty) return _chats;
-    final query = _searchQuery.toLowerCase();
-    return _chats.where((chat) {
-      return chat.name.toLowerCase().contains(query) || chat.id.toLowerCase().contains(query);
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(patientsControllerProvider.notifier).fetchPatients();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final patientsState = ref.watch(patientsControllerProvider);
+
+    final filteredPatients = patientsState.patients.where((patient) {
+      if (_searchQuery.isEmpty) return true;
+      final query = _searchQuery.toLowerCase();
+      final name = patient.name?.toLowerCase() ?? '';
+      final id = patient.id?.toLowerCase() ?? '';
+      return name.contains(query) || id.contains(query);
+    }).toList();
+
     return Theme(
       data: Theme.of(context).copyWith(
         textTheme: GoogleFonts.openSansTextTheme(
@@ -67,51 +45,54 @@ class _ChatListPageState extends State<ChatListPage> {
       ),
       child: Scaffold(
         backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Chat List',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        centerTitle: false,
-      ),
-      body: Column(
-        children: [
-          CustomSearchBar(
-            hintText: 'Search Patient...',
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+            onPressed: () => Navigator.pop(context),
           ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredChats.length,
-              itemBuilder: (context, index) {
-                final chat = _filteredChats[index];
-                return _buildChatListItem(
-                  context,
-                  name: chat.name,
-                  id: chat.id,
-                  message: chat.message,
-                  time: chat.time,
-                  isOnline: chat.isOnline,
-                );
+          title: const Text(
+            'Chat List',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          centerTitle: false,
+        ),
+        body: Column(
+          children: [
+            CustomSearchBar(
+              hintText: 'Search Patient...',
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
               },
             ),
-          ),
-        ],
-      ),
+            Expanded(
+              child: patientsState.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredPatients.isEmpty
+                      ? const Center(child: Text('Tidak ada pasien ditemukan.'))
+                      : ListView.builder(
+                          itemCount: filteredPatients.length,
+                          itemBuilder: (context, index) {
+                            final patient = filteredPatients[index];
+                            return _buildChatListItem(
+                              context,
+                              name: patient.name ?? 'Unknown',
+                              id: patient.id ?? '-',
+                              message: 'Ketuk untuk mulai chat',
+                              time: '',
+                              isOnline: true,
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }
-
 
   Widget _buildChatListItem(
     BuildContext context, {
@@ -193,10 +174,11 @@ class _ChatListPageState extends State<ChatListPage> {
                           style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                         ),
                         const Spacer(),
-                        Text(
-                          time,
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                        ),
+                        if (time.isNotEmpty)
+                          Text(
+                            time,
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 5),
