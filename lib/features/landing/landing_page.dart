@@ -30,6 +30,17 @@ class _LandingPageState extends State<LandingPage>
           _currentPage = _pageController.page ?? 0.0;
         });
       });
+      
+    // Auto advance from splash screen after 3.5 seconds
+    Future.delayed(const Duration(milliseconds: 3500), () {
+      if (mounted && _pageController.hasClients && _currentPage == 0.0) {
+        _pageController.animateToPage(
+          1,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
   }
 
   @override

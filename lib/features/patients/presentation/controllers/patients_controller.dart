@@ -140,3 +140,7 @@ final patientsControllerProvider = StateNotifierProvider<PatientsController, Pat
     deletePatient: ref.watch(deletePatientUseCaseProvider),
   );
 });
+
+final patientDetailProvider = FutureProvider.family<PatientModel?, String>((ref, id) {
+  return ref.watch(patientsControllerProvider.notifier).getPatientById(id);
+});
