@@ -1,3 +1,5 @@
+import 'package:lumira_ai_mobile/features/medical_records/data/models/medical_record_model.dart';
+
 class PatientModel {
   final String? id;
   final String? name;
@@ -7,6 +9,7 @@ class PatientModel {
   final String? medicalHistory;
   final String? contactNumber;
   final String? address;
+  final List<MedicalRecordModel>? medicalRecords;
 
   PatientModel({
     this.id,
@@ -17,6 +20,7 @@ class PatientModel {
     this.medicalHistory,
     this.contactNumber,
     this.address,
+    this.medicalRecords,
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,9 @@ class PatientModel {
       medicalHistory: json['medicalHistory'],
       contactNumber: json['contactNumber'],
       address: json['address'],
+      medicalRecords: json['medical_records'] != null
+          ? (json['medical_records'] as List).map((i) => MedicalRecordModel.fromJson(i)).toList()
+          : null,
     );
   }
 
