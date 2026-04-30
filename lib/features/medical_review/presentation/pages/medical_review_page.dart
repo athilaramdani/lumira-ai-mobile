@@ -59,7 +59,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                   children: [
                     const SizedBox(height: 10),
                     Text(
-                      'Welcome Dr $doctorName!',
+                      'Welcome $doctorName!',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
