@@ -214,7 +214,7 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
               child: StatCard(
                 isActive: currentFilter == 'all',
                 icon: Icons.grid_view_rounded,
-                label: 'Total\nImages',
+                label: 'Dashboard',
                 count: totalImages,
                 iconColor: AppColors.statusBenign,
                 onTap: () {
