@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 
-class DoctorDiagnosisCard extends StatefulWidget {
+class DoctorDiagnosisCard extends StatelessWidget {
+  final bool? agree;
   final ValueChanged<bool>? onAgreeChanged;
   final ValueChanged<String>? onNoteChanged;
 
   const DoctorDiagnosisCard({
     super.key,
+    this.agree,
     this.onAgreeChanged,
     this.onNoteChanged,
   });
-
-  @override
-  State<DoctorDiagnosisCard> createState() => _DoctorDiagnosisCardState();
-}
-
-class _DoctorDiagnosisCardState extends State<DoctorDiagnosisCard> {
-  bool? _agree;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +59,7 @@ class _DoctorDiagnosisCardState extends State<DoctorDiagnosisCard> {
               border: Border.all(color: Colors.grey.shade200),
             ),
             child: TextField(
-              onChanged: widget.onNoteChanged,
+              onChanged: onNoteChanged,
               decoration: InputDecoration(
                 hintText: 'Type here...',
                 hintStyle: TextStyle(
@@ -82,14 +77,11 @@ class _DoctorDiagnosisCardState extends State<DoctorDiagnosisCard> {
   }
 
   Widget _buildRadioOption(String label, bool value, Color color) {
-    bool isSelected = _agree == value;
+    bool isSelected = agree == value;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _agree = value;
-        });
-        if (widget.onAgreeChanged != null) {
-          widget.onAgreeChanged!(value);
+        if (onAgreeChanged != null) {
+          onAgreeChanged!(value);
         }
       },
       child: Padding(
