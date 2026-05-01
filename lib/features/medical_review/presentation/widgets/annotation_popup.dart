@@ -128,48 +128,65 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
   }
 
   Widget _buildDrawingArea() {
-    return GestureDetector(
-      onPanStart: (details) {
-        setState(() {
-          _currentStroke = DrawingStroke(
-            points: [details.localPosition],
-            color: _activeColor,
-            strokeWidth: _brushSize,
-            opacity: _brushOpacity,
-            isEraser: _isEraser,
-          );
-        });
-      },
-      onPanUpdate: (details) {
-        setState(() {
-          if (_currentStroke != null) {
-            _currentStroke!.points.add(details.localPosition);
-          }
-        });
-      },
-      onPanEnd: (details) {
-        setState(() {
-          if (_currentStroke != null) {
-            _strokes.add(_currentStroke!);
-            _currentStroke = null;
-          }
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          image: DecorationImage(
-            image: AssetImage(widget.imagePath),
-            fit: BoxFit.cover, 
-          ),
-        ),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.black, // Fallback background
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: FittedBox(
+        fit: BoxFit.cover,
         clipBehavior: Clip.hardEdge,
-        child: CustomPaint(
-          size: Size.infinite,
-          painter: DrawingPainter(
-            strokes: _strokes,
-            currentStroke: _currentStroke,
+        child: SizedBox(
+          width: 500,
+          height: 500,
+          child: GestureDetector(
+            onPanStart: (details) {
+              setState(() {
+                _currentStroke = DrawingStroke(
+                  points: [details.localPosition],
+                  color: _activeColor,
+                  strokeWidth: _brushSize,
+                  opacity: _brushOpacity,
+                  isEraser: _isEraser,
+                );
+              });
+            },
+            onPanUpdate: (details) {
+              setState(() {
+                if (_currentStroke != null) {
+                  _currentStroke!.points.add(details.localPosition);
+                }
+              });
+            },
+            onPanEnd: (details) {
+              setState(() {
+                if (_currentStroke != null) {
+                  _strokes.add(_currentStroke!);
+                  _currentStroke = null;
+                }
+              });
+            },
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    widget.imagePath,
+                    fit: BoxFit.cover, 
+                  ),
+                ),
+                Positioned.fill(
+                  child: CustomPaint(
+                    size: Size.infinite,
+                    painter: DrawingPainter(
+                      strokes: _strokes,
+                      currentStroke: _currentStroke,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

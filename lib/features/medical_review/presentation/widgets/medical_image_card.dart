@@ -23,16 +23,32 @@ class MedicalImageCard extends StatelessWidget {
           height: 160,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            image: DecorationImage(
-              image: AssetImage(imagePath),
-              fit: BoxFit.cover,
-            ),
           ),
           clipBehavior: Clip.hardEdge,
           child: Stack(
             children: [
-              if (overlay != null)
-                Positioned.fill(child: overlay!),
+              Positioned.fill(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    width: 500,
+                    height: 500,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Image.asset(
+                            imagePath,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        if (overlay != null)
+                          Positioned.fill(child: overlay!),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               if (badgeText != null)
                 Positioned(
                   top: 8,
