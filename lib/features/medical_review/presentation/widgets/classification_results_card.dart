@@ -63,8 +63,9 @@ class ClassificationResultsCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: color,
+          color: isActive ? color : Colors.white,
           borderRadius: BorderRadius.circular(8),
+          border: isActive ? null : Border.all(color: Colors.grey.shade300),
         ),
         child: Center(
           child: Text(
@@ -72,7 +73,7 @@ class ClassificationResultsCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: textColor,
+              color: isActive ? textColor : Colors.grey.shade400,
             ),
           ),
         ),
