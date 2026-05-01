@@ -11,12 +11,19 @@ import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/cl
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/doctor_diagnosis_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../domain/models/drawing_stroke.dart';
+import '../widgets/drawing_painter.dart';
+
 class MedicalReviewSummaryPage extends StatefulWidget {
   final ClassificationStatus aiResult;
+  final List<DrawingStroke> strokes;
+  final VisualMode visualMode;
 
   const MedicalReviewSummaryPage({
     super.key,
     this.aiResult = ClassificationStatus.benign,
+    this.strokes = const [],
+    this.visualMode = VisualMode.raw,
   });
 
   @override
@@ -55,10 +62,8 @@ class _MedicalReviewSummaryPageState extends State<MedicalReviewSummaryPage> {
                     const SizedBox(height: 20),
                     _buildImageSection(),
                     const ReviewControls(
-                      gradCamValue: false,
-                      sliderValue: 0.5,
-                      onGradCamChanged: _emptyOnGradCamChanged,
-                      onSliderChanged: _emptyOnSliderChanged,
+                      visualMode: VisualMode.raw,
+                      onVisualModeChanged: _emptyOnVisualModeChanged,
                     ),
                     const SizedBox(height: 10),
                     _buildSaveButton(),
@@ -105,18 +110,28 @@ class _MedicalReviewSummaryPageState extends State<MedicalReviewSummaryPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Row(
-        children: const [
-          Expanded(
+        children: [
+          const Expanded(
             child: MedicalImageCard(
-              label: 'Model Output',
-              imagePath: AppAssets.medicalScanModel,
+              label: 'AI RESULT',
+              imagePath: AppAssets.aiGradcam,
+              badgeText: 'AI GradCam',
             ),
           ),
-          SizedBox(width: 15),
+          const SizedBox(width: 15),
           Expanded(
             child: MedicalImageCard(
-              label: 'Brush',
-              imagePath: AppAssets.medicalScanBrush,
+              label: widget.visualMode == VisualMode.raw ? 'RAW VIEW' : 'NORMALIZED VIEW',
+              imagePath: widget.visualMode == VisualMode.raw ? AppAssets.rawPixels : AppAssets.normalizedView,
+              overlay: widget.strokes.isNotEmpty 
+                ? CustomPaint(
+                    size: Size.infinite,
+                    painter: DrawingPainter(
+                      strokes: widget.strokes,
+                      currentStroke: null,
+                    ),
+                  ) 
+                : null,
             ),
           ),
         ],
@@ -222,6 +237,5 @@ class _MedicalReviewSummaryPageState extends State<MedicalReviewSummaryPage> {
     );
   }
 
-  static void _emptyOnGradCamChanged(bool? value) {}
-  static void _emptyOnSliderChanged(double value) {}
+  static void _emptyOnVisualModeChanged(VisualMode value) {}
 }

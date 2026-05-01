@@ -14,20 +14,17 @@ class _DoctorDiagnosisCardState extends State<DoctorDiagnosisCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      width: double.infinity,
+      color: Colors.transparent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             "Doctor's Diagnosis",
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -35,7 +32,7 @@ class _DoctorDiagnosisCardState extends State<DoctorDiagnosisCard> {
             "Agree With AI Diagnosis?",
             style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary.withOpacity(0.6),
+              color: AppColors.textSecondary.withOpacity(0.8),
             ),
           ),
           const SizedBox(height: 12),
@@ -45,22 +42,23 @@ class _DoctorDiagnosisCardState extends State<DoctorDiagnosisCard> {
           const Text(
             "Add Note",
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
           Container(
-            height: 120,
+            height: 100,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
             ),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Type Here..',
+                hintText: 'Type here...',
                 hintStyle: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade400,
@@ -111,7 +109,7 @@ class _DoctorDiagnosisCardState extends State<DoctorDiagnosisCard> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),
