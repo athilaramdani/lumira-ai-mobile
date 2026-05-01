@@ -238,11 +238,17 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
             onStatusTap: (status) {
               setState(() {
                 _selectedClassification = status;
+                if (status == _mapToClassificationStatus(widget.aiResult)) {
+                  _doctorAgree = true;
+                } else {
+                  _doctorAgree = false;
+                }
               });
             },
           ),
           const SizedBox(height: 24),
           DoctorDiagnosisCard(
+            agree: _doctorAgree,
             onAgreeChanged: (val) => setState(() => _doctorAgree = val),
             onNoteChanged: (val) => setState(() => _doctorNote = val),
           ),
