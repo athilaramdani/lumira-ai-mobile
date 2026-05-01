@@ -36,9 +36,19 @@ class MedicalReviewPage extends ConsumerStatefulWidget {
 
 class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
   VisualMode _visualMode = VisualMode.raw;
+  bool _isSubmitted = false;
+  bool? _doctorAgree;
+  String _doctorNote = '';
+  late ClassificationStatus _selectedClassification;
   
   // Annotation Tool States
   List<DrawingStroke> _strokes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedClassification = _mapToClassificationStatus(widget.aiResult);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,22 +234,203 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
           ),
           const SizedBox(height: 24),
           ClassificationResultsCard(
-            activeStatus: _mapToClassificationStatus(widget.aiResult),
+            activeStatus: _selectedClassification,
             onStatusTap: (status) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MedicalReviewSummaryPage(
-                    aiResult: status,
-                    strokes: _strokes,
-                    visualMode: _visualMode,
-                  ),
-                ),
-              );
+              setState(() {
+                _selectedClassification = status;
+              });
             },
           ),
           const SizedBox(height: 24),
-          const DoctorDiagnosisCard(),
+          DoctorDiagnosisCard(
+            onAgreeChanged: (val) => setState(() => _doctorAgree = val),
+            onNoteChanged: (val) => setState(() => _doctorNote = val),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _isSubmitted = true;
+                });
+                // Show success snackbar for now
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Diagnosis submitted successfully!'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Submit Diagnosis',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          if (_isSubmitted) ...[
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Result By Doctor',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        clipBehavior: Clip.hardEdge,
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: 342, // Approximate width of original canvas
+                            height: 400, // Approximate height of original canvas
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: Image.asset(
+                                    _visualMode == VisualMode.raw 
+                                        ? AppAssets.rawPixels 
+                                        : AppAssets.normalizedView,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: DrawingPainter(
+                                      strokes: _strokes,
+                                      currentStroke: null,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Agree With AI? ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  _doctorAgree == null 
+                                      ? '-' 
+                                      : (_doctorAgree! ? 'Agree' : 'Disagree'),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: _doctorAgree == true 
+                                        ? AppColors.statusNormal 
+                                        : (_doctorAgree == false ? AppColors.statusMalignant : AppColors.textPrimary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Note:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _doctorNote.isEmpty ? '-' : _doctorNote,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary.withOpacity(0.8),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Classification Result By AI',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _selectedClassification == ClassificationStatus.benign
+                                    ? AppColors.statusBenign
+                                    : (_selectedClassification == ClassificationStatus.malignant
+                                        ? AppColors.statusMalignant
+                                        : AppColors.statusNormal),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _selectedClassification == ClassificationStatus.benign
+                                    ? 'Benign'
+                                    : (_selectedClassification == ClassificationStatus.malignant
+                                        ? 'Malignant'
+                                        : 'Normal'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _selectedClassification == ClassificationStatus.benign
+                                      ? AppColors.textPrimary
+                                      : Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
