@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
-import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 
 class MedicalImageCard extends StatelessWidget {
   final String label;
   final String imagePath;
   final Widget? overlay;
+  final String? badgeText;
 
   const MedicalImageCard({
     super.key,
     required this.label,
     required this.imagePath,
     this.overlay,
+    this.badgeText,
   });
 
   @override
@@ -21,28 +22,48 @@ class MedicalImageCard extends StatelessWidget {
         Container(
           height: 160,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(12),
             image: DecorationImage(
               image: AssetImage(imagePath),
               fit: BoxFit.cover,
             ),
           ),
-          child: overlay,
+          clipBehavior: Clip.hardEdge,
+          child: Stack(
+            children: [
+              if (overlay != null)
+                Positioned.fill(child: overlay!),
+              if (badgeText != null)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      badgeText!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
-          label,
-          style: TextStyle(
+          label.toUpperCase(),
+          style: const TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary.withOpacity(0.8),
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 1.0,
           ),
         ),
       ],
