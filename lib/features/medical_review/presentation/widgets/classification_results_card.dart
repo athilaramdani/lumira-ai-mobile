@@ -16,23 +16,20 @@ class ClassificationResultsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      width: double.infinity,
+      color: Colors.transparent,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Classification Results\nBy AI',
-            textAlign: TextAlign.center,
+            'Classification Result',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildStatusBadge('Normal', ClassificationStatus.normal),
           const SizedBox(height: 8),
           _buildStatusBadge('Benign', ClassificationStatus.benign),
@@ -46,12 +43,14 @@ class ClassificationResultsCard extends StatelessWidget {
   Widget _buildStatusBadge(String label, ClassificationStatus status) {
     bool isActive = activeStatus == status;
     Color color;
+    Color textColor = Colors.white;
     switch (status) {
       case ClassificationStatus.normal:
         color = AppColors.statusNormal;
         break;
       case ClassificationStatus.benign:
         color = AppColors.statusBenign;
+        textColor = AppColors.textPrimary; // Better contrast for yellow
         break;
       case ClassificationStatus.malignant:
         color = AppColors.statusMalignant;
@@ -62,27 +61,18 @@ class ClassificationResultsCard extends StatelessWidget {
       onTap: () => onStatusTap?.call(status),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? color : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : [],
+          color: color,
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: isActive ? Colors.white : color.withOpacity(0.8),
+              color: textColor,
             ),
           ),
         ),
