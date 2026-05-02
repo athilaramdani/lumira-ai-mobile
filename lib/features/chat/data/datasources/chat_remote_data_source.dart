@@ -75,12 +75,12 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
     final docRef = await _messages(roomId).add(model.toFirestore());
 
-    // Update room's last_message metadata for chat list preview
-    await _rooms.doc(roomId).update({
+    // Update room's last_message metadata for chat list preview, using set with merge so it creates the doc if not exists
+    await _rooms.doc(roomId).set({
       'last_message': message,
       'last_message_at': Timestamp.fromDate(model.sentAt),
       'last_sender_role': senderRole,
-    });
+    }, SetOptions(merge: true));
 
     // Notify backend
     try {
@@ -135,7 +135,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     } catch (e) {
       print('Error resolving room: $e');
       // Fallback for development if API fails, generate one locally
-      return 'room_${patientId}_$medicalRecordId';
+      return 'room_$patientId';
     }
   }
 }
