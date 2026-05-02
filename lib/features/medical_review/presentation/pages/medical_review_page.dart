@@ -28,6 +28,10 @@ class MedicalReviewPage extends ConsumerStatefulWidget {
   final String? rawImage;
   final String? gradCamImage;
   final bool isDone; // true = PATCH (edit), false = POST (new review)
+  
+  final String? initialDoctorDiagnosis;
+  final String? initialDoctorNote;
+  final String? initialAgreement;
 
   const MedicalReviewPage({
     super.key,
@@ -39,6 +43,9 @@ class MedicalReviewPage extends ConsumerStatefulWidget {
     this.rawImage,
     this.gradCamImage,
     this.isDone = false,
+    this.initialDoctorDiagnosis,
+    this.initialDoctorNote,
+    this.initialAgreement,
   });
 
   @override
@@ -57,8 +64,32 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
   @override
   void initState() {
     super.initState();
-    _selectedClassification = _mapToClassificationStatus(widget.aiResult);
-    _doctorAgree = true;
+    
+    // Initialize classification based on doctor's previous diagnosis if it exists, otherwise use AI Result
+    if (widget.initialDoctorDiagnosis != null && widget.initialDoctorDiagnosis!.isNotEmpty) {
+      final diag = widget.initialDoctorDiagnosis!.toLowerCase();
+      if (diag.contains('malignant')) {
+        _selectedClassification = ClassificationStatus.malignant;
+      } else if (diag.contains('benign')) {
+        _selectedClassification = ClassificationStatus.benign;
+      } else {
+        _selectedClassification = ClassificationStatus.normal;
+      }
+    } else {
+      _selectedClassification = _mapToClassificationStatus(widget.aiResult);
+    }
+    
+    // Initialize agreement status
+    if (widget.initialAgreement != null) {
+      _doctorAgree = widget.initialAgreement!.toLowerCase() == 'agree';
+    } else {
+      _doctorAgree = true; // default
+    }
+    
+    // Initialize notes
+    if (widget.initialDoctorNote != null) {
+      _doctorNote = widget.initialDoctorNote!;
+    }
   }
 
   @override
@@ -259,6 +290,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
           const SizedBox(height: 24),
           DoctorDiagnosisCard(
             agree: _doctorAgree,
+            initialNote: widget.initialDoctorNote,
             onAgreeChanged: (val) => setState(() => _doctorAgree = val),
             onNoteChanged: (val) => setState(() => _doctorNote = val),
           ),
