@@ -26,7 +26,19 @@ final sendMessageUseCaseProvider =
 final resolveRoomUseCaseProvider =
     Provider((ref) => ResolveRoomUseCase(ref.watch(chatRepositoryProvider)));
 
+final mintFirebaseTokenUseCaseProvider =
+    Provider((ref) => MintFirebaseTokenUseCase(ref.watch(chatRepositoryProvider)));
+
+final getRoomsUseCaseProvider =
+    Provider((ref) => GetRoomsUseCase(ref.watch(chatRepositoryProvider)));
+
 final unreadChatCountProvider = StateProvider<int>((ref) => 0);
+
+/// Rooms list provider — used by ChatListPage to show rooms from backend API.
+final chatRoomsProvider = FutureProvider<List<dynamic>>((ref) async {
+  final useCase = ref.watch(getRoomsUseCaseProvider);
+  return useCase();
+});
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -64,10 +76,11 @@ class ChatController extends StateNotifier<ChatState> {
   final GetMessagesUseCase _getMessages;
   final SendMessageUseCase _sendMessage;
   final ResolveRoomUseCase _resolveRoom;
+  final MintFirebaseTokenUseCase _mintToken;
 
   StreamSubscription<List<ChatMessage>>? _messagesSub;
 
-  ChatController(this._getMessages, this._sendMessage, this._resolveRoom)
+  ChatController(this._getMessages, this._sendMessage, this._resolveRoom, this._mintToken)
       : super(const ChatState());
 
   @override
@@ -78,19 +91,35 @@ class ChatController extends StateNotifier<ChatState> {
 
   // ─── Room Setup ─────────────────────────────────────────────────────────
 
-  /// Resolves the Firestore room then subscribes to real-time messages.
+  /// Step 1: Mint Firebase token from backend → sign in to Firebase Auth.
+  /// Step 2: Resolve / create room via backend API using medicalRecordId.
+  /// Step 3: Subscribe to Firestore real-time messages for that room.
   Future<void> initRoom({
     required String patientId,
     required String doctorId,
+    required String medicalRecordId,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final roomId =
-          await _resolveRoom(patientId: patientId, doctorId: doctorId);
+      // Step 1: Get custom token from backend & authenticate with Firebase
+      print('[ChatController] Minting Firebase custom token...');
+      await _mintToken();
+
+      // Step 2: Resolve / create room via backend API
+      print('[ChatController] Resolving room. patient=$patientId doctor=$doctorId record=$medicalRecordId');
+      final roomId = await _resolveRoom(
+        patientId: patientId,
+        doctorId: doctorId,
+        medicalRecordId: medicalRecordId,
+      );
+      print('[ChatController] Room resolved: $roomId');
       state = state.copyWith(roomId: roomId);
+
+      // Step 3: Listen to Firestore for real-time messages
       _listenToMessages(roomId);
     } catch (e) {
+      print('[ChatController] initRoom error: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -111,9 +140,10 @@ class ChatController extends StateNotifier<ChatState> {
 
   Future<void> sendMessage(String text) async {
     final roomId = state.roomId;
+    print('[ChatController] sendMessage called. text: $text, roomId: $roomId');
     if (roomId == null || text.trim().isEmpty) return;
 
-    // Optimistic update — add a temporary message immediately
+    // Optimistic update — show message immediately before Firebase confirms
     final tempId = 'optimistic_${DateTime.now().millisecondsSinceEpoch}';
     final tempMessage = ChatMessage(
       id: tempId,
@@ -124,21 +154,22 @@ class ChatController extends StateNotifier<ChatState> {
     );
     state = state.copyWith(messages: [...state.messages, tempMessage]);
 
-    // Retrieve actual sender ID from SharedPreferences (saved at login)
     final prefs = await SharedPreferences.getInstance();
-    final senderId = prefs.getString('user_id') ?? 'doctor';
+    final senderId = prefs.getString('user_id') ?? '';
     final senderRole = prefs.getString('user_role') ?? 'doctor';
 
     try {
+      print('[ChatController] Sending to Firestore. senderId: $senderId, senderRole: $senderRole');
       await _sendMessage(
         roomId: roomId,
         senderId: senderId,
         senderRole: senderRole,
         message: text.trim(),
       );
-      // The real message will arrive via the Firestore stream and replace the optimistic one.
+      print('[ChatController] Send success!');
+      // Real message arrives via Firestore stream, replacing optimistic one.
     } catch (e) {
-      // Remove optimistic message on failure and show error
+      print('[ChatController] Send error: $e');
       final msgs = state.messages.where((m) => m.id != tempId).toList();
       state = state.copyWith(
         messages: msgs,
@@ -150,42 +181,48 @@ class ChatController extends StateNotifier<ChatState> {
 
 // ─── Provider Factory ─────────────────────────────────────────────────────────
 
-/// Takes `otherPartyId` as the family parameter:
-/// - For DOCTOR: pass the patient's ID
-/// - For PATIENT: pass the doctor's ID (or 'default' to let controller resolve)
+/// Family param is a Dart Record with named fields.
+/// - For DOCTOR: patientId = patient's ID, medicalRecordId = patient's latest record ID
+/// - For PATIENT: patientId = own user ID,  medicalRecordId = own medical record ID
 final chatControllerProvider = StateNotifierProvider.family<
-    ChatController, ChatState, String>((ref, otherPartyId) {
-  final controller = ChatController(
-    ref.watch(getMessagesUseCaseProvider),
-    ref.watch(sendMessageUseCaseProvider),
-    ref.watch(resolveRoomUseCaseProvider),
-  );
+    ChatController, ChatState, ({String patientId, String medicalRecordId})>(
+  (ref, params) {
+    final controller = ChatController(
+      ref.watch(getMessagesUseCaseProvider),
+      ref.watch(sendMessageUseCaseProvider),
+      ref.watch(resolveRoomUseCaseProvider),
+      ref.watch(mintFirebaseTokenUseCaseProvider),
+    );
 
-  // Init room asynchronously — determine patientId and doctorId based on role
-  Future(() async {
-    final prefs = await SharedPreferences.getInstance();
-    final myId = prefs.getString('user_id') ?? '';
-    final myRole = prefs.getString('user_role') ?? 'doctor';
+    Future(() async {
+      final prefs = await SharedPreferences.getInstance();
+      final myId = prefs.getString('user_id') ?? '';
+      final myRole = prefs.getString('user_role') ?? 'doctor';
 
-    String patientId;
-    String doctorId;
+      String patientId;
+      String doctorId;
 
-    if (myRole == 'patient') {
-      // I am the patient — otherPartyId is the doctor's ID
-      patientId = myId;
-      doctorId = otherPartyId.isNotEmpty ? otherPartyId : 'default_doctor';
-    } else {
-      // I am the doctor — otherPartyId is the patient's ID
-      patientId = otherPartyId;
-      doctorId = myId.isNotEmpty ? myId : 'default_doctor';
-    }
+      if (myRole == 'patient') {
+        // I am the patient — patientId is my own ID
+        patientId = myId;
+        doctorId = params.patientId.isNotEmpty ? params.patientId : 'default_doctor';
+      } else {
+        // I am the doctor — patientId is the patient's ID from params
+        patientId = params.patientId;
+        doctorId = myId.isNotEmpty ? myId : 'default_doctor';
+      }
 
-    await controller.initRoom(patientId: patientId, doctorId: doctorId);
-  });
+      await controller.initRoom(
+        patientId: patientId,
+        doctorId: doctorId,
+        medicalRecordId: params.medicalRecordId,
+      );
+    });
 
-  ref.onDispose(() {
-    controller._messagesSub?.cancel();
-  });
+    ref.onDispose(() {
+      controller._messagesSub?.cancel();
+    });
 
-  return controller;
-});
+    return controller;
+  },
+);
