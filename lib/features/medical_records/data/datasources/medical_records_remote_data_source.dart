@@ -15,7 +15,16 @@ abstract class MedicalRecordsRemoteDataSource {
     required String recordId,
     required String agreement,
     required String note,
-    File? heatmapImage,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
+  });
+
+  Future<void> editReviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
   });
   
   Future<MedicalRecordModel> reanalyzePatient(String patientId);
@@ -47,27 +56,65 @@ class MedicalRecordsRemoteDataSourceImpl implements MedicalRecordsRemoteDataSour
     return MedicalRecordModel.fromJson(data);
   }
 
+  Future<FormData> _buildReviewFormData({
+    required String agreement,
+    required String note,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
+  }) async {
+    final map = <String, dynamic>{
+      "agreement": agreement,
+      "note": note,
+    };
+    if (doctorDiagnosis != null) {
+      map["doctorDiagnosis"] = doctorDiagnosis;
+    }
+    FormData formData = FormData.fromMap(map);
+    if (doctorBrushPath != null) {
+      String fileName = doctorBrushPath.path.split('/').last;
+      formData.files.add(MapEntry(
+        "doctorBrushPath",
+        await MultipartFile.fromFile(doctorBrushPath.path, filename: fileName),
+      ));
+    }
+    return formData;
+  }
+
   @override
   Future<void> reviewMedicalRecord({
     required String recordId,
     required String agreement,
     required String note,
-    File? heatmapImage,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
   }) async {
-    FormData formData = FormData.fromMap({
-      "agreement": agreement,
-      "note": note,
-    });
-
-    if (heatmapImage != null) {
-      String fileName = heatmapImage.path.split('/').last;
-      formData.files.add(MapEntry(
-        "heatmapImage",
-        await MultipartFile.fromFile(heatmapImage.path, filename: fileName),
-      ));
-    }
-
+    final formData = await _buildReviewFormData(
+      agreement: agreement,
+      note: note,
+      doctorDiagnosis: doctorDiagnosis,
+      doctorBrushPath: doctorBrushPath,
+    );
     await _dio.post(
+      ApiConstants.reviewMedicalRecord(recordId),
+      data: formData,
+    );
+  }
+
+  @override
+  Future<void> editReviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
+  }) async {
+    final formData = await _buildReviewFormData(
+      agreement: agreement,
+      note: note,
+      doctorDiagnosis: doctorDiagnosis,
+      doctorBrushPath: doctorBrushPath,
+    );
+    await _dio.patch(
       ApiConstants.reviewMedicalRecord(recordId),
       data: formData,
     );
