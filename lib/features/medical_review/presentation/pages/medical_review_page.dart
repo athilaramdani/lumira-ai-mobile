@@ -27,6 +27,7 @@ class MedicalReviewPage extends ConsumerStatefulWidget {
   final String phone;
   final String? rawImage;
   final String? gradCamImage;
+  final bool isDone; // true = PATCH (edit), false = POST (new review)
 
   const MedicalReviewPage({
     super.key,
@@ -37,6 +38,7 @@ class MedicalReviewPage extends ConsumerStatefulWidget {
     required this.phone,
     this.rawImage,
     this.gradCamImage,
+    this.isDone = false,
   });
 
   @override
@@ -281,12 +283,29 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                 );
                 
                 final agreement = _doctorAgree == true ? 'agree' : 'disagree';
+                final diagnosisLabel = _selectedClassification == ClassificationStatus.benign
+                    ? 'Benign'
+                    : (_selectedClassification == ClassificationStatus.malignant
+                        ? 'Malignant'
+                        : 'Normal');
                 
-                final success = await ref.read(medicalRecordsControllerProvider.notifier).reviewMedicalRecord(
-                  recordId: widget.recordId!,
-                  agreement: agreement,
-                  note: _doctorNote,
-                );
+                // Use PATCH if editing existing (Done), POST if new review
+                final bool success;
+                if (widget.isDone) {
+                  success = await ref.read(medicalRecordsControllerProvider.notifier).editReviewMedicalRecord(
+                    recordId: widget.recordId!,
+                    agreement: agreement,
+                    note: _doctorNote,
+                    doctorDiagnosis: diagnosisLabel,
+                  );
+                } else {
+                  success = await ref.read(medicalRecordsControllerProvider.notifier).reviewMedicalRecord(
+                    recordId: widget.recordId!,
+                    agreement: agreement,
+                    note: _doctorNote,
+                    doctorDiagnosis: diagnosisLabel,
+                  );
+                }
                 
                 if (!mounted) return;
                 Navigator.pop(context); // hide loading

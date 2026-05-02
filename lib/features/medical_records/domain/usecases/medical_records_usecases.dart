@@ -27,13 +27,36 @@ class ReviewMedicalRecordUseCase {
     required String recordId,
     required String agreement,
     required String note,
-    File? heatmapImage,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
   }) async {
     return await repository.reviewMedicalRecord(
       recordId: recordId,
       agreement: agreement,
       note: note,
-      heatmapImage: heatmapImage,
+      doctorDiagnosis: doctorDiagnosis,
+      doctorBrushPath: doctorBrushPath,
+    );
+  }
+}
+
+class EditReviewMedicalRecordUseCase {
+  final MedicalRecordsRepository repository;
+  EditReviewMedicalRecordUseCase(this.repository);
+
+  Future<void> call({
+    required String recordId,
+    required String agreement,
+    required String note,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
+  }) async {
+    return await repository.editReviewMedicalRecord(
+      recordId: recordId,
+      agreement: agreement,
+      note: note,
+      doctorDiagnosis: doctorDiagnosis,
+      doctorBrushPath: doctorBrushPath,
     );
   }
 }
