@@ -6,6 +6,7 @@ class MedicalImageCard extends StatelessWidget {
   final String imagePath;
   final Widget? overlay;
   final String? badgeText;
+  final bool isNetwork;
 
   const MedicalImageCard({
     super.key,
@@ -13,6 +14,7 @@ class MedicalImageCard extends StatelessWidget {
     required this.imagePath,
     this.overlay,
     this.badgeText,
+    this.isNetwork = false,
   });
 
   @override
@@ -37,10 +39,15 @@ class MedicalImageCard extends StatelessWidget {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: Image.asset(
-                            imagePath,
-                            fit: BoxFit.cover,
-                          ),
+                          child: isNetwork 
+                              ? Image.network(
+                                  imagePath,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.asset(
+                                  imagePath,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                         if (overlay != null)
                           Positioned.fill(child: overlay!),

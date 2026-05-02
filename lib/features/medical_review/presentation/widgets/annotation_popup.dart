@@ -5,6 +5,8 @@ import 'drawing_painter.dart';
 
 class AnnotationPopup extends StatefulWidget {
   final String imagePath;
+  final bool isNetwork;
+  final bool isReadOnly;
   final List<DrawingStroke> initialStrokes;
   final ValueChanged<List<DrawingStroke>> onSave;
   final ValueChanged<List<DrawingStroke>> onSaveAndNavigate;
@@ -12,6 +14,8 @@ class AnnotationPopup extends StatefulWidget {
   const AnnotationPopup({
     super.key,
     required this.imagePath,
+    this.isNetwork = false,
+    this.isReadOnly = false,
     required this.initialStrokes,
     required this.onSave,
     required this.onSaveAndNavigate,
@@ -29,6 +33,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
   double _brushSize = 5.0;
   double _brushOpacity = 1.0;
   bool _isEraser = false;
+  bool _isNormalized = false;
 
   @override
   void initState() {
@@ -55,7 +60,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Annotation Tools',
+                'Image Viewer',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -75,53 +80,55 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
           Expanded(
             child: _buildDrawingArea(),
           ),
-          const SizedBox(height: 16),
-          _buildFocusArea(),
-          const SizedBox(height: 16),
-          _buildSliderControl(
-            context,
-            'Brush Size:',
-            _getBrushSizeLabel(_brushSize),
-            _brushSize,
-            (val) => setState(() => _brushSize = val),
-            min: 1.0,
-            max: 20.0,
-          ),
-          const SizedBox(height: 16),
-          _buildSliderControl(
-            context,
-            'Opacity:',
-            '${(_brushOpacity * 100).toInt()}%',
-            _brushOpacity,
-            (val) => setState(() => _brushOpacity = val),
-            min: 0.1,
-            max: 1.0,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {
-                widget.onSaveAndNavigate(_strokes);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          if (!widget.isReadOnly) ...[
+            const SizedBox(height: 16),
+            _buildFocusArea(),
+            const SizedBox(height: 16),
+            _buildSliderControl(
+              context,
+              'Brush Size:',
+              _getBrushSizeLabel(_brushSize),
+              _brushSize,
+              (val) => setState(() => _brushSize = val),
+              min: 1.0,
+              max: 20.0,
+            ),
+            const SizedBox(height: 16),
+            _buildSliderControl(
+              context,
+              'Opacity:',
+              '${(_brushOpacity * 100).toInt()}%',
+              _brushOpacity,
+              (val) => setState(() => _brushOpacity = val),
+              min: 0.1,
+              max: 1.0,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () {
+                  widget.onSaveAndNavigate(_strokes);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Save Annotations',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                child: const Text(
+                  'Save Annotations',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -142,7 +149,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
           width: 500,
           height: 500,
           child: GestureDetector(
-            onPanStart: (details) {
+            onPanStart: widget.isReadOnly ? null : (details) {
               setState(() {
                 _currentStroke = DrawingStroke(
                   points: [details.localPosition],
@@ -171,20 +178,26 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Image.asset(
-                    widget.imagePath,
-                    fit: BoxFit.cover, 
-                  ),
+                  child: widget.isNetwork && !_isNormalized
+                      ? Image.network(
+                          widget.imagePath,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.asset(
+                          _isNormalized ? 'assets/images/normalized_view.png' : widget.imagePath,
+                          fit: BoxFit.cover, 
+                        ),
                 ),
-                Positioned.fill(
-                  child: CustomPaint(
-                    size: Size.infinite,
-                    painter: DrawingPainter(
-                      strokes: _strokes,
-                      currentStroke: _currentStroke,
+                if (!widget.isReadOnly)
+                  Positioned.fill(
+                    child: CustomPaint(
+                      size: Size.infinite,
+                      painter: DrawingPainter(
+                        strokes: _strokes,
+                        currentStroke: _currentStroke,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -203,9 +216,25 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Focus Area:',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Focus Area:',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
+            Row(
+              children: [
+                const Text('Raw', style: TextStyle(fontSize: 12)),
+                Switch(
+                  value: _isNormalized,
+                  onChanged: (val) => setState(() => _isNormalized = val),
+                  activeColor: AppColors.primary,
+                ),
+                const Text('Normalized', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Wrap(

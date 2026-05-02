@@ -8,7 +8,12 @@ abstract class MedicalRecordsRepository {
     void Function(int count, int total)? onProgress,
   });
 
-  Future<void> reviewMedicalRecord(String recordId, String doctorNotes, String status);
+  Future<void> reviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    File? heatmapImage,
+  });
 
   Future<MedicalRecordModel> reanalyzePatient(String patientId);
 }
