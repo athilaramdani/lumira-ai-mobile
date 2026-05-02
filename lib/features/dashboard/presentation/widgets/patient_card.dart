@@ -189,6 +189,7 @@ class PatientCard extends StatelessWidget {
                         phone: phone,
                         rawImage: rawImage,
                         gradCamImage: gradCamImage,
+                        isDone: actionLabel == 'Done',
                       ),
                     ),
                   );

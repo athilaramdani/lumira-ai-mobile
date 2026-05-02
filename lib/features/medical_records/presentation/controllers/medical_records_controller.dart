@@ -18,6 +18,7 @@ final medicalRecordsRepositoryProvider = Provider<MedicalRecordsRepository>((ref
 
 final uploadMedicalRecordUseCaseProvider = Provider((ref) => UploadMedicalRecordUseCase(ref.watch(medicalRecordsRepositoryProvider)));
 final reviewMedicalRecordUseCaseProvider = Provider((ref) => ReviewMedicalRecordUseCase(ref.watch(medicalRecordsRepositoryProvider)));
+final editReviewMedicalRecordUseCaseProvider = Provider((ref) => EditReviewMedicalRecordUseCase(ref.watch(medicalRecordsRepositoryProvider)));
 final reanalyzePatientUseCaseProvider = Provider((ref) => ReanalyzePatientUseCase(ref.watch(medicalRecordsRepositoryProvider)));
 
 // State
@@ -52,14 +53,17 @@ class MedicalRecordsState {
 class MedicalRecordsController extends StateNotifier<MedicalRecordsState> {
   final UploadMedicalRecordUseCase _uploadMedicalRecord;
   final ReviewMedicalRecordUseCase _reviewMedicalRecord;
+  final EditReviewMedicalRecordUseCase _editReviewMedicalRecord;
   final ReanalyzePatientUseCase _reanalyzePatient;
 
   MedicalRecordsController({
     required UploadMedicalRecordUseCase uploadMedicalRecord,
     required ReviewMedicalRecordUseCase reviewMedicalRecord,
+    required EditReviewMedicalRecordUseCase editReviewMedicalRecord,
     required ReanalyzePatientUseCase reanalyzePatient,
   })  : _uploadMedicalRecord = uploadMedicalRecord,
         _reviewMedicalRecord = reviewMedicalRecord,
+        _editReviewMedicalRecord = editReviewMedicalRecord,
         _reanalyzePatient = reanalyzePatient,
         super(MedicalRecordsState());
 
@@ -84,11 +88,13 @@ class MedicalRecordsController extends StateNotifier<MedicalRecordsState> {
     }
   }
 
+  /// POST - submit new review (when status is "Review Needed")
   Future<bool> reviewMedicalRecord({
     required String recordId,
     required String agreement,
     required String note,
-    File? heatmapImage,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -96,7 +102,33 @@ class MedicalRecordsController extends StateNotifier<MedicalRecordsState> {
         recordId: recordId,
         agreement: agreement,
         note: note,
-        heatmapImage: heatmapImage,
+        doctorDiagnosis: doctorDiagnosis,
+        doctorBrushPath: doctorBrushPath,
+      );
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  /// PATCH - edit existing review (when status is "Done")
+  Future<bool> editReviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _editReviewMedicalRecord(
+        recordId: recordId,
+        agreement: agreement,
+        note: note,
+        doctorDiagnosis: doctorDiagnosis,
+        doctorBrushPath: doctorBrushPath,
       );
       state = state.copyWith(isLoading: false);
       return true;
@@ -123,6 +155,7 @@ final medicalRecordsControllerProvider = StateNotifierProvider<MedicalRecordsCon
   return MedicalRecordsController(
     uploadMedicalRecord: ref.watch(uploadMedicalRecordUseCaseProvider),
     reviewMedicalRecord: ref.watch(reviewMedicalRecordUseCaseProvider),
+    editReviewMedicalRecord: ref.watch(editReviewMedicalRecordUseCaseProvider),
     reanalyzePatient: ref.watch(reanalyzePatientUseCaseProvider),
   );
 });
