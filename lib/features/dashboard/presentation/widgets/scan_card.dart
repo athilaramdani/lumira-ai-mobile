@@ -331,7 +331,7 @@ class ScanCard extends StatelessWidget {
                     borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
                   ),
                   child: Text(
-                    result ?? 'Normal',
+                    result ?? '-',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
