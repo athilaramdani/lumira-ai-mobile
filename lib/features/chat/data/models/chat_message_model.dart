@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ChatMessageModel {
   final String id;
   final String senderId;
@@ -13,6 +15,29 @@ class ChatMessageModel {
     required this.sentAt,
   });
 
+  /// Parse from a Firestore DocumentSnapshot
+  factory ChatMessageModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return ChatMessageModel(
+      id: doc.id,
+      senderId: data['sender_id']?.toString() ?? '',
+      senderRole: data['sender_role'] ?? 'patient',
+      message: data['message'] ?? '',
+      sentAt: (data['sent_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  /// Convert to Firestore-compatible map
+  Map<String, dynamic> toFirestore() {
+    return {
+      'sender_id': senderId,
+      'sender_role': senderRole,
+      'message': message,
+      'sent_at': Timestamp.fromDate(sentAt),
+    };
+  }
+
+  /// Fallback: parse from a plain JSON map (REST API compatibility)
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     return ChatMessageModel(
       id: json['id']?.toString() ?? '',
