@@ -1,4 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dio/dio.dart';
+import '../../../../core/network/api_client.dart';
 import '../models/chat_message_model.dart';
 
 abstract class ChatRemoteDataSource {
@@ -13,18 +16,29 @@ abstract class ChatRemoteDataSource {
     required String message,
   });
 
-  /// Resolve or create a chat room. Returns the Firestore room document ID.
+  /// Mint a custom Firebase token and sign in to Firebase Auth.
+  Future<void> mintFirebaseToken();
+
+  /// Resolve or create a chat room via the backend API.
   Future<String> resolveRoom({
     required String patientId,
     required String doctorId,
+    required String medicalRecordId,
   });
+
+  /// Get the list of chat rooms from the backend.
+  Future<List<dynamic>> getRooms();
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final FirebaseFirestore _firestore;
+  final FirebaseAuth _firebaseAuth;
+  final Dio _dio;
 
-  ChatRemoteDataSourceImpl({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  ChatRemoteDataSourceImpl({FirebaseFirestore? firestore, FirebaseAuth? firebaseAuth, Dio? dio})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _dio = dio ?? ApiClient().dio;
 
   // ─── Firestore collection paths ───────────────────────────────────────
   CollectionReference get _rooms => _firestore.collection('chat_rooms');
@@ -59,7 +73,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       sentAt: DateTime.now(),
     );
 
-    await _messages(roomId).add(model.toFirestore());
+    final docRef = await _messages(roomId).add(model.toFirestore());
 
     // Update room's last_message metadata for chat list preview
     await _rooms.doc(roomId).update({
@@ -67,6 +81,41 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       'last_message_at': Timestamp.fromDate(model.sentAt),
       'last_sender_role': senderRole,
     });
+
+    // Notify backend
+    try {
+      await _dio.post('/chat/rooms/$roomId/notify', data: {
+        'messageId': docRef.id,
+      });
+    } catch (e) {
+      print('Failed to send FCM notify: $e');
+    }
+  }
+
+  @override
+  Future<void> mintFirebaseToken() async {
+    try {
+      final response = await _dio.post('/chat/firebase-token');
+      final customToken = response.data['customToken'];
+      if (customToken != null) {
+        await _firebaseAuth.signInWithCustomToken(customToken);
+        print('Successfully minted and signed in with custom token');
+      }
+    } catch (e) {
+      print('Error minting firebase token: $e');
+      throw Exception('Gagal mendapatkan akses chat realtime');
+    }
+  }
+
+  @override
+  Future<List<dynamic>> getRooms() async {
+    try {
+      final response = await _dio.get('/chat/rooms');
+      return response.data as List<dynamic>;
+    } catch (e) {
+      print('Error getting rooms: $e');
+      throw Exception('Gagal mendapatkan daftar chat');
+    }
   }
 
   // ─── Resolve / create room ────────────────────────────────────────────
@@ -74,32 +123,19 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<String> resolveRoom({
     required String patientId,
     required String doctorId,
+    required String medicalRecordId,
   }) async {
-    // Use a deterministic room ID so doctor & patient always share the same room
-    final roomId = _buildRoomId(patientId, doctorId);
-
-    final roomRef = _rooms.doc(roomId);
-    final snapshot = await roomRef.get();
-
-    if (!snapshot.exists) {
-      // Create room document
-      await roomRef.set({
-        'patient_id': patientId,
-        'doctor_id': doctorId,
-        'participants': [patientId, doctorId],
-        'created_at': FieldValue.serverTimestamp(),
-        'last_message': '',
-        'last_message_at': FieldValue.serverTimestamp(),
+    try {
+      final response = await _dio.post('/chat/rooms', data: {
+        'patientId': patientId,
+        'doctorId': doctorId,
+        'medicalRecordId': medicalRecordId,
       });
+      return response.data['id'];
+    } catch (e) {
+      print('Error resolving room: $e');
+      // Fallback for development if API fails, generate one locally
+      return 'room_${patientId}_$medicalRecordId';
     }
-
-    return roomId;
-  }
-
-  /// Room ID = patientId only.
-  /// This ensures both doctor (who knows patientId) and patient (who knows their own ID)
-  /// always share the same Firestore room without needing each other's ID upfront.
-  String _buildRoomId(String patientId, String doctorId) {
-    return 'room_$patientId';
   }
 }

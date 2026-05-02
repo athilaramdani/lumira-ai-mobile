@@ -1,4 +1,7 @@
 @echo off
+echo Menjalankan Firebase Local Emulators di terminal baru...
+start cmd /k "firebase emulators:start"
+
 echo Mengunduh dependencies...
 call flutter pub get
 

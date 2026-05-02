@@ -30,6 +30,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
   final ScrollController _scrollController = ScrollController();
   bool _hasMedicalRecord = false;
   bool _isLoadingPatient = true;
+  String _medicalRecordId = '';
 
   @override
   void initState() {
@@ -42,6 +43,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
     if (mounted) {
       setState(() {
         _hasMedicalRecord = patient?.medicalRecords?.isNotEmpty == true;
+        _medicalRecordId = patient?.latestRecord?.id ?? patient?.medicalRecords?.firstOrNull?.id ?? '';
         _isLoadingPatient = false;
       });
     }
@@ -56,9 +58,8 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   void _sendMessage() {
     if (_textController.text.trim().isEmpty) return;
-    ref.read(chatControllerProvider(widget.patientId).notifier).sendMessage(
-      _textController.text.trim(),
-    );
+    ref.read(chatControllerProvider((patientId: widget.patientId, medicalRecordId: _medicalRecordId)).notifier)
+        .sendMessage(_textController.text.trim());
     _textController.clear();
     _scrollToBottom();
   }
@@ -77,10 +78,11 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final chatState = ref.watch(chatControllerProvider(widget.patientId));
+    final chatParams = (patientId: widget.patientId, medicalRecordId: _medicalRecordId);
+    final chatState = ref.watch(chatControllerProvider(chatParams));
 
-    // Optional: auto-scroll when new messages arrive
-    ref.listen(chatControllerProvider(widget.patientId), (previous, next) {
+    // Auto-scroll when new messages arrive
+    ref.listen(chatControllerProvider(chatParams), (previous, next) {
       if (previous != null && next.messages.length > previous.messages.length) {
         _scrollToBottom();
       }
@@ -111,6 +113,17 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
           children: [
             _buildPatientInfoBar(),
             const Divider(height: 1, color: AppColors.border),
+            if (chatState.error != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                color: Colors.red.shade50,
+                child: Text(
+                  chatState.error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
             Expanded(
               child: Container(
                 color: const Color(0xFFF8FAFC),

@@ -31,12 +31,36 @@ class SendMessageUseCase {
   }
 }
 
-/// Resolves (or creates) a Firestore chat room for a doctor-patient pair.
+/// Resolves (or creates) a chat room via the backend API.
 class ResolveRoomUseCase {
   final ChatRepository repository;
   ResolveRoomUseCase(this.repository);
 
-  Future<String> call({required String patientId, required String doctorId}) {
-    return repository.resolveRoom(patientId: patientId, doctorId: doctorId);
+  Future<String> call({
+    required String patientId,
+    required String doctorId,
+    required String medicalRecordId,
+  }) {
+    return repository.resolveRoom(
+      patientId: patientId,
+      doctorId: doctorId,
+      medicalRecordId: medicalRecordId,
+    );
   }
+}
+
+/// Mints a Firebase custom token and signs in to Firebase Auth.
+class MintFirebaseTokenUseCase {
+  final ChatRepository repository;
+  MintFirebaseTokenUseCase(this.repository);
+
+  Future<void> call() => repository.mintFirebaseToken();
+}
+
+/// Gets the list of chat rooms for the authenticated actor.
+class GetRoomsUseCase {
+  final ChatRepository repository;
+  GetRoomsUseCase(this.repository);
+
+  Future<List<dynamic>> call() => repository.getRooms();
 }
