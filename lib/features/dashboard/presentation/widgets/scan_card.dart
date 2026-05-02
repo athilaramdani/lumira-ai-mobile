@@ -362,7 +362,10 @@ class ScanCard extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ChatPage()),
+                  MaterialPageRoute(builder: (context) => ChatPage(
+                    doctorName: doctorName,
+                    medicalRecordId: scanId,
+                  )),
                 );
               },
               icon: const Icon(Icons.chat_bubble_outline, size: 18),
@@ -393,7 +396,10 @@ class ScanCard extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ChatPage()),
+                  MaterialPageRoute(builder: (context) => ChatPage(
+                    doctorName: doctorName,
+                    medicalRecordId: scanId,
+                  )),
                 );
               },
               icon: const Icon(Icons.chat_bubble_outline, size: 18),
