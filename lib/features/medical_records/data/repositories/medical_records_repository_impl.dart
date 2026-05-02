@@ -38,14 +38,37 @@ class MedicalRecordsRepositoryImpl implements MedicalRecordsRepository {
     required String recordId,
     required String agreement,
     required String note,
-    File? heatmapImage,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
   }) async {
     try {
       await remoteDataSource.reviewMedicalRecord(
         recordId: recordId,
         agreement: agreement,
         note: note,
-        heatmapImage: heatmapImage,
+        doctorDiagnosis: doctorDiagnosis,
+        doctorBrushPath: doctorBrushPath,
+      );
+    } catch (e) {
+      _handleError(e);
+    }
+  }
+
+  @override
+  Future<void> editReviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
+  }) async {
+    try {
+      await remoteDataSource.editReviewMedicalRecord(
+        recordId: recordId,
+        agreement: agreement,
+        note: note,
+        doctorDiagnosis: doctorDiagnosis,
+        doctorBrushPath: doctorBrushPath,
       );
     } catch (e) {
       _handleError(e);
