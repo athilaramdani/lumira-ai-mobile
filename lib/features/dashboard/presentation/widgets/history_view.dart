@@ -4,113 +4,155 @@ import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/chat_page.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/clinical_report_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../statistics/presentation/controllers/statistics_controller.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../patients/presentation/controllers/patients_controller.dart';
 
 class HistoryView extends ConsumerWidget {
   const HistoryView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsState = ref.watch(statisticsControllerProvider);
-    final activities = statsState.activities;
+    final authState = ref.watch(authControllerProvider);
+    final userId = authState.user?.id;
+    
+    // Fetch patient data based on logged in user ID
+    final patientAsync = userId != null 
+        ? ref.watch(patientDetailProvider(userId))
+        : const AsyncValue.loading();
 
-    final List<Widget> dynamicDiagnosisCards = activities.isEmpty
-      ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No historical records found.'))]
-      : activities.map((activity) {
-          return _buildDiagnosisCard(
-            context,
-            id: activity['id']?.toString() ?? '#USG-???',
-            title: activity['title']?.toString() ?? 'Medical Scan',
-            date: activity['date']?.toString() ?? 'Recent',
-            result: activity['result']?.toString().toUpperCase() ?? 'UNKNOWN',
-            icon: Icons.medical_services_outlined,
-          );
-        }).whereType<Widget>().toList();
+    return patientAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+      data: (patient) {
+        final medicalRecords = patient?.medicalRecords ?? [];
 
-    final List<Widget> dynamicChatCards = activities.isEmpty
-      ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No previous consultations found.'))]
-      : activities.map((activity) {
-          return _buildDoctorChatCard(
-            context,
-            doctorName: activity['doctor_name']?.toString() ?? 'Dr. Specialist',
-            role: 'Consulting Doctor',
-            relatedId: activity['id']?.toString() ?? '#USG-???',
-            date: activity['date']?.toString() ?? 'Recent',
-          );
-        }).whereType<Widget>().toList();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Riwayat Diagnosis Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              Text(
-                'Riwayat Diagnosis',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+        final List<Widget> dynamicDiagnosisCards = medicalRecords.isEmpty
+            ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No historical records found.'))]
+            : medicalRecords.map((record) {
+                return _buildDiagnosisCard(
+                  context,
+                  id: record.id?.toString() ?? '#USG-???',
+                  title: 'Medical Scan',
+                  date: record.createdAt?.toString() ?? 'Recent',
+                  result: record.resultLabel?.toString().toUpperCase() ?? 'UNKNOWN',
+                  icon: Icons.medical_services_outlined,
+                );
+              }).whereType<Widget>().toList();
+
+        // Chat cards logic (previous consultations if any exist in the backend)
+        final List<Widget> dynamicChatCards = []; // You can implement fetching previous chat history here if needed
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Riwayat Diagnosis Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: const [
+                  Text(
+                    'Riwayat Diagnosis',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'ARCHIVAL RECORDS',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'ARCHIVAL RECORDS',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+              const SizedBox(height: 16),
+
+              // Diagnosis Cards
+              ...dynamicDiagnosisCards,
+
+              const SizedBox(height: 32),
+
+              // Only show Chat Section if patient has at least one medical record
+              if (medicalRecords.isNotEmpty) ...[
+                // Chat Dokter Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: const [
+                    Expanded(
+                      child: Text(
+                        'Chat dengan Dokter',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'REAL-TIME',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: Color(0xFF22C55E),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Diagnosis Cards
-          ...dynamicDiagnosisCards,
+                const SizedBox(height: 16),
 
-          const SizedBox(height: 32),
+                // Permanent chat card — always visible if patient is diagnosed
+                _buildActiveChatCard(context),
 
-          // Riwayat Chat Dokter Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              Expanded(
-                child: Text(
-                  'Riwayat Chat\nDokter',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
+                // Previous consultation cards (from activities)
+                if (dynamicChatCards.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ...dynamicChatCards,
+                ],
+              ] else ...[
+                // Empty state for Chat
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.chat_bubble_outline, color: Colors.blue.shade300, size: 48),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Konsultasi Chat',
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Fitur chat dengan dokter akan terbuka setelah Anda melakukan diagnosis awal.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.blue.shade500, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              Text(
-                'PREVIOUS\nCONSULTATIONS',
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  height: 1.2,
-                ),
-              ),
+              ],
+
+              const SizedBox(height: 80),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Doctor Chat Cards
-          ...dynamicChatCards,
-
-          const SizedBox(height: 80), // Bottom nav padding
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -350,11 +392,85 @@ class HistoryView extends ConsumerWidget {
     );
   }
 
+  /// Active chat card — always visible so patient can always open chat
+  Widget _buildActiveChatCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _navigateToChat(context, doctorName: 'Dokter Anda'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF40B4FF), Color(0xFF0EA5E9)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF40B4FF).withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.2),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Konsultasi dengan Dokter',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.circle, color: Color(0xFF86EFAC), size: 8),
+                      SizedBox(width: 4),
+                      Text(
+                        'Chat Real-time aktif',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.chat, color: Colors.white, size: 20),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _navigateToChat(BuildContext context, {required String doctorName}) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const ChatPage(),
+        builder: (_) => ChatPage(doctorName: doctorName),
       ),
     );
   }

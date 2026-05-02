@@ -8,14 +8,36 @@ class ChatRepositoryImpl implements ChatRepository {
   ChatRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<ChatMessage>> getChatHistory(String patientId) async {
-    final models = await remoteDataSource.getChatHistory(patientId);
-    return models.map((model) => ChatMessage.fromModel(model)).toList();
+  Stream<List<ChatMessage>> getMessages(String roomId) {
+    return remoteDataSource.getMessages(roomId).map(
+          (models) =>
+              models.map((model) => ChatMessage.fromModel(model)).toList(),
+        );
   }
 
   @override
-  Future<ChatMessage> sendMessage(String patientId, String message) async {
-    final model = await remoteDataSource.sendMessage(patientId, message);
-    return ChatMessage.fromModel(model);
+  Future<void> sendMessage({
+    required String roomId,
+    required String senderId,
+    required String senderRole,
+    required String message,
+  }) {
+    return remoteDataSource.sendMessage(
+      roomId: roomId,
+      senderId: senderId,
+      senderRole: senderRole,
+      message: message,
+    );
+  }
+
+  @override
+  Future<String> resolveRoom({
+    required String patientId,
+    required String doctorId,
+  }) {
+    return remoteDataSource.resolveRoom(
+      patientId: patientId,
+      doctorId: doctorId,
+    );
   }
 }
