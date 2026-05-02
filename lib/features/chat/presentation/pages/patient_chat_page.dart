@@ -289,14 +289,22 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
     );
   }
 
-  void _navigateToMedicalReview(BuildContext context) {
+  void _navigateToMedicalReview(BuildContext context) async {
+    final patient = await ref.read(patientsControllerProvider.notifier).getPatientById(widget.patientId);
+    final latestRecord = patient?.latestRecord ?? (patient?.medicalRecords?.isNotEmpty == true ? patient!.medicalRecords!.first : null);
+
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MedicalReviewPage(
           patientId: widget.patientId,
+          recordId: latestRecord?.id,
           patientName: widget.patientName,
           aiResult: AIResult.unknown,
+          phone: patient?.contactNumber ?? '08123456789',
+          rawImage: latestRecord?.imageUrl,
+          gradCamImage: latestRecord?.imageUrl,
         ),
       ),
     );

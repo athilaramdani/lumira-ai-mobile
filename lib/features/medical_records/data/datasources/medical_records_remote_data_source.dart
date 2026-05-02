@@ -11,7 +11,12 @@ abstract class MedicalRecordsRemoteDataSource {
     void Function(int count, int total)? onProgress,
   });
   
-  Future<void> reviewMedicalRecord(String recordId, String doctorNotes, String status);
+  Future<void> reviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    File? heatmapImage,
+  });
   
   Future<MedicalRecordModel> reanalyzePatient(String patientId);
 }
@@ -43,13 +48,28 @@ class MedicalRecordsRemoteDataSourceImpl implements MedicalRecordsRemoteDataSour
   }
 
   @override
-  Future<void> reviewMedicalRecord(String recordId, String doctorNotes, String status) async {
+  Future<void> reviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    File? heatmapImage,
+  }) async {
+    FormData formData = FormData.fromMap({
+      "agreement": agreement,
+      "note": note,
+    });
+
+    if (heatmapImage != null) {
+      String fileName = heatmapImage.path.split('/').last;
+      formData.files.add(MapEntry(
+        "heatmapImage",
+        await MultipartFile.fromFile(heatmapImage.path, filename: fileName),
+      ));
+    }
+
     await _dio.post(
       ApiConstants.reviewMedicalRecord(recordId),
-      data: {
-        "doctor_notes": doctorNotes,
-        "status": status,
-      },
+      data: formData,
     );
   }
 

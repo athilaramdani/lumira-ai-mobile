@@ -84,10 +84,20 @@ class MedicalRecordsController extends StateNotifier<MedicalRecordsState> {
     }
   }
 
-  Future<bool> reviewMedicalRecord(String recordId, String doctorNotes, String status) async {
+  Future<bool> reviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    File? heatmapImage,
+  }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await _reviewMedicalRecord(recordId, doctorNotes, status);
+      await _reviewMedicalRecord(
+        recordId: recordId,
+        agreement: agreement,
+        note: note,
+        heatmapImage: heatmapImage,
+      );
       state = state.copyWith(isLoading: false);
       return true;
     } catch (e) {

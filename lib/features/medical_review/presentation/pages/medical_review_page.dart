@@ -17,17 +17,26 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/patient_card.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/doctor_dashboard_page.dart';
+import 'package:lumira_ai_mobile/features/medical_records/presentation/controllers/medical_records_controller.dart';
 
 class MedicalReviewPage extends ConsumerStatefulWidget {
   final String patientId;
+  final String? recordId;
   final String patientName;
   final AIResult aiResult;
+  final String phone;
+  final String? rawImage;
+  final String? gradCamImage;
 
   const MedicalReviewPage({
     super.key,
     required this.patientId,
+    this.recordId,
     required this.patientName,
     required this.aiResult,
+    required this.phone,
+    this.rawImage,
+    this.gradCamImage,
   });
 
   @override
@@ -35,7 +44,6 @@ class MedicalReviewPage extends ConsumerStatefulWidget {
 }
 
 class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
-  VisualMode _visualMode = VisualMode.raw;
   bool _isSubmitted = false;
   bool? _doctorAgree;
   String _doctorNote = '';
@@ -48,6 +56,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
   void initState() {
     super.initState();
     _selectedClassification = _mapToClassificationStatus(widget.aiResult);
+    _doctorAgree = true;
   }
 
   @override
@@ -83,10 +92,6 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                     ),
                     const SizedBox(height: 20),
                     _buildImageSection(),
-                    ReviewControls(
-                      visualMode: _visualMode,
-                      onVisualModeChanged: (val) => setState(() => _visualMode = val),
-                    ),
                     const SizedBox(height: 20),
                     _buildDiagnosisGrid(),
                     const SizedBox(height: 20),
@@ -126,22 +131,25 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Row(
         children: [
-          const Expanded(
-            child: MedicalImageCard(
-              label: 'AI RESULT',
-              imagePath: AppAssets.aiGradcam,
-              badgeText: 'AI GradCam',
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _showAnnotationTools(isReadOnly: true),
+              child: MedicalImageCard(
+                label: 'AI RESULT',
+                imagePath: widget.gradCamImage ?? AppAssets.aiGradcam,
+                badgeText: 'AI GradCam',
+                isNetwork: widget.gradCamImage != null,
+              ),
             ),
           ),
           const SizedBox(width: 15),
           Expanded(
             child: GestureDetector(
-              onTap: _showAnnotationTools,
+              onTap: () => _showAnnotationTools(isReadOnly: false),
               child: MedicalImageCard(
-                label: _visualMode == VisualMode.raw ? 'RAW VIEW' : 'NORMALIZED VIEW',
-                imagePath: _visualMode == VisualMode.raw 
-                    ? AppAssets.rawPixels 
-                    : AppAssets.normalizedView,
+                label: 'RAW VIEW',
+                imagePath: widget.rawImage ?? AppAssets.rawPixels,
+                isNetwork: widget.rawImage != null,
                 overlay: CustomPaint(
                   size: Size.infinite,
                   painter: DrawingPainter(
@@ -230,7 +238,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
           PatientInfoCard(
             id: widget.patientId,
             name: widget.patientName,
-            phone: '08123456789',
+            phone: widget.phone,
           ),
           const SizedBox(height: 24),
           ClassificationResultsCard(
@@ -257,18 +265,52 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _isSubmitted = true;
-                });
-                // Show success snackbar for now
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Diagnosis submitted successfully!'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 2),
-                  ),
+              onPressed: () async {
+                if (widget.recordId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error: No record ID found.')),
+                  );
+                  return;
+                }
+                
+                // Show loading dialog
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(child: CircularProgressIndicator()),
                 );
+                
+                final agreement = _doctorAgree == true ? 'agree' : 'disagree';
+                
+                final success = await ref.read(medicalRecordsControllerProvider.notifier).reviewMedicalRecord(
+                  recordId: widget.recordId!,
+                  agreement: agreement,
+                  note: _doctorNote,
+                );
+                
+                if (!mounted) return;
+                Navigator.pop(context); // hide loading
+                
+                if (success) {
+                  setState(() {
+                    _isSubmitted = true;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Diagnosis submitted successfully!'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                } else {
+                  final error = ref.read(medicalRecordsControllerProvider).error;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to submit: $error'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -327,12 +369,15 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                             child: Stack(
                               children: [
                                 Positioned.fill(
-                                  child: Image.asset(
-                                    _visualMode == VisualMode.raw 
-                                        ? AppAssets.rawPixels 
-                                        : AppAssets.normalizedView,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: widget.rawImage != null 
+                                      ? Image.network(
+                                          widget.rawImage!,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Image.asset(
+                                          AppAssets.rawPixels,
+                                          fit: BoxFit.cover,
+                                        ),
                                 ),
                                 Positioned.fill(
                                   child: CustomPaint(
@@ -442,14 +487,16 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
     );
   }
 
-  void _showAnnotationTools() {
+  void _showAnnotationTools({required bool isReadOnly}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AnnotationPopup(
-        imagePath: _visualMode == VisualMode.raw ? AppAssets.rawPixels : AppAssets.normalizedView,
+        imagePath: isReadOnly ? (widget.gradCamImage ?? AppAssets.aiGradcam) : (widget.rawImage ?? AppAssets.rawPixels),
+        isNetwork: isReadOnly ? (widget.gradCamImage != null) : (widget.rawImage != null),
         initialStrokes: _strokes,
+        isReadOnly: isReadOnly,
         onSave: (newStrokes) {
           setState(() {
             _strokes = newStrokes;

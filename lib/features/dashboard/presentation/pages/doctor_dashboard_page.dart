@@ -16,20 +16,28 @@ import '../widgets/profile_view.dart';
 class PatientData {
   final String name;
   final String id;
+  final String? recordId;
   final AIResult aiResult;
   final ImageStatus imageStatus;
   final String actionLabel;
   final Color actionColor;
   final String filterCategory; // 'waiting', 'done', 'attention'
+  final String phone;
+  final String? rawImage;
+  final String? gradCamImage;
 
   PatientData({
     required this.name,
     required this.id,
+    this.recordId,
     required this.aiResult,
     required this.imageStatus,
     required this.actionLabel,
     required this.actionColor,
     required this.filterCategory,
+    required this.phone,
+    this.rawImage,
+    this.gradCamImage,
   });
 }
 
@@ -59,20 +67,35 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
     final patientsState = ref.watch(patientsControllerProvider);
     return patientsState.patients.map((patient) {
       final id = patient.id ?? '';
-      final isDone = id.hashCode % 2 == 0;
+      final latestRecord = patient.latestRecord ?? 
+          (patient.medicalRecords?.isNotEmpty == true ? patient.medicalRecords!.first : null);
+          
+      final isDone = latestRecord?.validationStatus?.toUpperCase() == 'DONE' || 
+                     latestRecord?.validationStatus?.toUpperCase() == 'VALIDATED' || 
+                     latestRecord?.doctorDiagnosis != null;
       
-      final aiResultVar = isDone 
-          ? (id.length % 2 == 0 ? AIResult.normal : AIResult.benign)
-          : AIResult.unknown;
+      final aiDiagnosisRaw = latestRecord?.resultLabel?.toLowerCase() ?? '';
+      AIResult aiResultVar = AIResult.unknown;
+      if (aiDiagnosisRaw.contains('malignant')) {
+        aiResultVar = AIResult.malignant;
+      } else if (aiDiagnosisRaw.contains('benign')) {
+        aiResultVar = AIResult.benign;
+      } else if (aiDiagnosisRaw.contains('normal')) {
+        aiResultVar = AIResult.normal;
+      }
 
       return PatientData(
         name: patient.name ?? 'Unknown',
         id: id,
+        recordId: latestRecord?.id,
         aiResult: aiResultVar,
-        imageStatus: isDone ? ImageStatus.yes : ImageStatus.missing,
+        imageStatus: latestRecord?.imageUrl != null ? ImageStatus.yes : ImageStatus.missing,
         actionLabel: isDone ? 'Done' : 'Review Needed',
         actionColor: isDone ? AppColors.btnDone : AppColors.btnReviewNeeded,
         filterCategory: isDone ? 'done' : 'waiting',
+        phone: patient.contactNumber ?? '08123456789',
+        rawImage: latestRecord?.imageUrl,
+        gradCamImage: latestRecord?.resultLabel != null ? (latestRecord?.imageUrl) : null, // Backend aiGradCamImage isn't mapped inside latestRecord in our model, let's just pass null if not available
       );
     }).toList();
   }
@@ -247,10 +270,14 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
       children: patients.map((p) => PatientCard(
         patientName: p.name,
         patientId: p.id,
+        recordId: p.recordId,
         aiResult: p.aiResult,
         imageStatus: p.imageStatus,
         actionLabel: p.actionLabel,
         actionColor: p.actionColor,
+        phone: p.phone,
+        rawImage: p.rawImage,
+        gradCamImage: p.gradCamImage,
       )).toList(),
     );
   }
