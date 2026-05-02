@@ -107,7 +107,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             scanId: id,
             status: status,
             patientName: activity['patient_name'],
-            result: activity['result'],
+            result: activity['result_label'] ?? activity['classification_result'] ?? activity['result'],
           );
         }).whereType<Widget>().toList();
 

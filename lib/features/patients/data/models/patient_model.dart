@@ -10,6 +10,7 @@ class PatientModel {
   final String? contactNumber;
   final String? address;
   final List<MedicalRecordModel>? medicalRecords;
+  final MedicalRecordModel? latestRecord;
 
   PatientModel({
     this.id,
@@ -21,6 +22,7 @@ class PatientModel {
     this.contactNumber,
     this.address,
     this.medicalRecords,
+    this.latestRecord,
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,9 @@ class PatientModel {
       address: json['address'],
       medicalRecords: json['medical_records'] != null
           ? (json['medical_records'] as List).map((i) => MedicalRecordModel.fromJson(i)).toList()
+          : null,
+      latestRecord: json['latestRecord'] != null
+          ? MedicalRecordModel.fromJson(json['latestRecord'])
           : null,
     );
   }

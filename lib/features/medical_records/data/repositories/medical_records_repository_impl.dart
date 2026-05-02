@@ -34,9 +34,19 @@ class MedicalRecordsRepositoryImpl implements MedicalRecordsRepository {
   }
 
   @override
-  Future<void> reviewMedicalRecord(String recordId, String doctorNotes, String status) async {
+  Future<void> reviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    File? heatmapImage,
+  }) async {
     try {
-      await remoteDataSource.reviewMedicalRecord(recordId, doctorNotes, status);
+      await remoteDataSource.reviewMedicalRecord(
+        recordId: recordId,
+        agreement: agreement,
+        note: note,
+        heatmapImage: heatmapImage,
+      );
     } catch (e) {
       _handleError(e);
     }

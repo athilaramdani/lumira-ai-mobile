@@ -23,8 +23,18 @@ class ReviewMedicalRecordUseCase {
   final MedicalRecordsRepository repository;
   ReviewMedicalRecordUseCase(this.repository);
 
-  Future<void> call(String recordId, String doctorNotes, String status) async {
-    return await repository.reviewMedicalRecord(recordId, doctorNotes, status);
+  Future<void> call({
+    required String recordId,
+    required String agreement,
+    required String note,
+    File? heatmapImage,
+  }) async {
+    return await repository.reviewMedicalRecord(
+      recordId: recordId,
+      agreement: agreement,
+      note: note,
+      heatmapImage: heatmapImage,
+    );
   }
 }
 

@@ -10,19 +10,27 @@ enum ImageStatus { yes, missing }
 class PatientCard extends StatelessWidget {
   final String patientName;
   final String patientId;
+  final String? recordId;
   final AIResult aiResult;
   final ImageStatus imageStatus;
   final String actionLabel;
   final Color actionColor;
+  final String phone;
+  final String? rawImage;
+  final String? gradCamImage;
 
   const PatientCard({
     super.key,
     required this.patientName,
     required this.patientId,
+    this.recordId,
     required this.aiResult,
     required this.imageStatus,
     required this.actionLabel,
     required this.actionColor,
+    required this.phone,
+    this.rawImage,
+    this.gradCamImage,
   });
 
   Color _getAIResultColor() {
@@ -175,8 +183,12 @@ class PatientCard extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (context) => MedicalReviewPage(
                         patientId: patientId,
+                        recordId: recordId,
                         patientName: patientName,
                         aiResult: aiResult,
+                        phone: phone,
+                        rawImage: rawImage,
+                        gradCamImage: gradCamImage,
                       ),
                     ),
                   );
