@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Development rules - allow all reads/writes
+    // TODO: Ganti dengan rules yang lebih ketat sebelum production
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

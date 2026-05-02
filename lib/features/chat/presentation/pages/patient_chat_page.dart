@@ -55,9 +55,8 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
   }
 
   void _sendMessage() {
-    if (_textController.text.trim().isEmpty || !_hasMedicalRecord) return;
+    if (_textController.text.trim().isEmpty) return;
     ref.read(chatControllerProvider(widget.patientId).notifier).sendMessage(
-      widget.patientId,
       _textController.text.trim(),
     );
     _textController.clear();
@@ -112,30 +111,34 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
           children: [
             _buildPatientInfoBar(),
             const Divider(height: 1, color: AppColors.border),
-            if (!_isLoadingPatient && !_hasMedicalRecord)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                color: Colors.amber.shade50,
-                child: const Text(
-                  'Pasien ini belum memiliki rekam medis. Chat dinonaktifkan.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.deepOrange, fontSize: 12),
-                ),
-              ),
             Expanded(
               child: Container(
                 color: const Color(0xFFF8FAFC),
                 child: chatState.isLoading && chatState.messages.isEmpty
                     ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                        itemCount: chatState.messages.length,
-                        itemBuilder: (context, index) {
-                          return _buildMessageBubble(chatState.messages[index]);
-                        },
-                      ),
+                    : chatState.messages.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade300),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Belum ada pesan dengan pasien ini.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                            itemCount: chatState.messages.length,
+                            itemBuilder: (context, index) {
+                              return _buildMessageBubble(chatState.messages[index]);
+                            },
+                          ),
               ),
             ),
             _buildActionButtons(),
@@ -266,22 +269,18 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       color: Colors.white,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           _buildActionButton(Icons.assignment_outlined, 'Diagnosis', () {
             _navigateToMedicalReview(context);
           }),
+          const SizedBox(width: 12),
           _buildActionButton(Icons.smart_toy_outlined, 'Ask AI', () {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => const MedgemmaChatPage(),
               ),
-            );
-          }),
-          _buildActionButton(Icons.attach_file, 'Attach Image', () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Attach Image feature coming soon')),
             );
           }),
         ],

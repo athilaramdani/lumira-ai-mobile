@@ -7,10 +7,14 @@ import '../../../../core/constants/app_assets.dart';
 import '../../domain/entities/chat_message.dart';
 import '../controllers/chat_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
-import '../../../patients/presentation/controllers/patients_controller.dart';
 
+/// Patient-side chat page.
+/// The family param for chatControllerProvider is the patient's own user ID.
+/// The controller detects role='patient' from SharedPreferences and resolves the room correctly.
 class ChatPage extends ConsumerStatefulWidget {
-  const ChatPage({super.key});
+  final String? doctorName;
+
+  const ChatPage({super.key, this.doctorName});
 
   @override
   ConsumerState<ChatPage> createState() => _ChatPageState();
@@ -19,37 +23,6 @@ class ChatPage extends ConsumerStatefulWidget {
 class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _hasMedicalRecord = false;
-  bool _isLoadingPatient = true;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkMedicalRecord();
-    });
-  }
-
-  Future<void> _checkMedicalRecord() async {
-    final authState = ref.read(authControllerProvider);
-    final patientId = authState.user?.id;
-    if (patientId == null) {
-      if (mounted) {
-        setState(() {
-          _isLoadingPatient = false;
-        });
-      }
-      return;
-    }
-
-    final patient = await ref.read(patientsControllerProvider.notifier).getPatientById(patientId);
-    if (mounted) {
-      setState(() {
-        _hasMedicalRecord = patient?.medicalRecords?.isNotEmpty == true;
-        _isLoadingPatient = false;
-      });
-    }
-  }
 
   @override
   void dispose() {
@@ -59,9 +32,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   void _sendMessage(String patientId) {
-    if (_textController.text.trim().isEmpty || !_hasMedicalRecord) return;
+    if (_textController.text.trim().isEmpty) return;
     ref.read(chatControllerProvider(patientId).notifier).sendMessage(
-      patientId,
       _textController.text.trim(),
     );
     _textController.clear();
@@ -83,28 +55,29 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    final patientId = authState.user?.id;
+    // For patients, their OWN user ID is used as the family param
+    // The controller detects role='patient' and builds roomId = 'room_{patientId}'
+    final myId = authState.user?.id ?? '';
 
-    if (patientId == null) {
+    if (myId.isEmpty) {
       return const Scaffold(
-        body: Center(child: Text('User ID not found.')),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    final chatState = ref.watch(chatControllerProvider(patientId));
+    final chatState = ref.watch(chatControllerProvider(myId));
 
-    // Optional: auto-scroll when new messages arrive
-    ref.listen(chatControllerProvider(patientId), (previous, next) {
+    ref.listen(chatControllerProvider(myId), (previous, next) {
       if (previous != null && next.messages.length > previous.messages.length) {
         _scrollToBottom();
       }
     });
 
+    final doctorLabel = widget.doctorName ?? 'Dokter';
+
     return Theme(
       data: Theme.of(context).copyWith(
-        textTheme: GoogleFonts.openSansTextTheme(
-          Theme.of(context).textTheme,
-        ),
+        textTheme: GoogleFonts.openSansTextTheme(Theme.of(context).textTheme),
       ),
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -118,23 +91,24 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           titleSpacing: 0,
           title: Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 18,
-                backgroundImage: AssetImage(AppAssets.doctor), 
+                backgroundColor: const Color(0xFF40B4FF).withValues(alpha: 0.15),
+                backgroundImage: const AssetImage(AppAssets.doctor),
               ),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    'Dr. Sarah', // Dummy doctor name for now
-                    style: TextStyle(
+                    doctorLabel,
+                    style: const TextStyle(
                       color: Colors.black87,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
+                  const Text(
                     'Surgical Oncologist',
                     style: TextStyle(
                       color: AppColors.textSecondary,
@@ -145,36 +119,71 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               ),
             ],
           ),
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF22C55E).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.circle, color: Color(0xFF22C55E), size: 8),
+                  SizedBox(width: 4),
+                  Text('Online', style: TextStyle(color: Color(0xFF22C55E), fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
         ),
         body: Column(
           children: [
-            if (!_isLoadingPatient && !_hasMedicalRecord)
+            // Error banner
+            if (chatState.error != null)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                color: Colors.amber.shade50,
-                child: const Text(
-                  'Anda belum memiliki rekam medis. Chat dinonaktifkan.',
+                padding: const EdgeInsets.all(10),
+                color: Colors.red.shade50,
+                child: Text(
+                  chatState.error!,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.deepOrange, fontSize: 12),
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
                 ),
               ),
+            // Messages list
             Expanded(
               child: Container(
                 color: const Color(0xFFF8FAFC),
                 child: chatState.isLoading && chatState.messages.isEmpty
                     ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                        itemCount: chatState.messages.length,
-                        itemBuilder: (context, index) {
-                          return _buildMessageBubble(chatState.messages[index]);
-                        },
-                      ),
+                    : chatState.messages.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade300),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Belum ada pesan.\nMulai konsultasi dengan dokter Anda!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                            itemCount: chatState.messages.length,
+                            itemBuilder: (context, index) {
+                              return _buildMessageBubble(chatState.messages[index]);
+                            },
+                          ),
               ),
             ),
-            _buildInputArea(patientId),
+            // Input area
+            _buildInputArea(myId),
           ],
         ),
       ),
@@ -182,11 +191,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    // Local user is patient -> senderRole could be 'patient' or 'optimistic'
-    final isPatient = message.senderRole == 'patient' || message.senderRole == 'optimistic';
+    final isMe = message.senderRole == 'patient' || message.senderRole == 'optimistic';
 
     return Align(
-      alignment: isPatient ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -194,11 +202,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isPatient ? const Color(0xFF40B4FF) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isPatient ? [] : [
+          color: isMe ? const Color(0xFF40B4FF) : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isMe ? 16 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 16),
+          ),
+          boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 5,
               offset: const Offset(0, 2),
             ),
@@ -207,10 +220,22 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (!isMe)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'Dokter',
+                  style: TextStyle(
+                    color: Colors.blue.shade700,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             Text(
               message.message,
               style: TextStyle(
-                color: isPatient ? Colors.white : Colors.black87,
+                color: isMe ? Colors.white : Colors.black87,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -222,11 +247,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 Text(
                   DateFormat('HH:mm').format(message.sentAt.toLocal()),
                   style: TextStyle(
-                    color: isPatient ? Colors.white70 : Colors.grey,
+                    color: isMe ? Colors.white70 : Colors.grey,
                     fontSize: 10,
                   ),
                 ),
-                if (isPatient) ...[
+                if (isMe) ...[
                   const SizedBox(width: 4),
                   Icon(
                     message.senderRole == 'optimistic' ? Icons.access_time : Icons.done_all,
@@ -242,12 +267,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  Widget _buildInputArea(String patientId) {
-    final isDisabled = _isLoadingPatient || !_hasMedicalRecord;
-
+  Widget _buildInputArea(String myId) {
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 8),
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Expanded(
@@ -260,32 +292,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               ),
               child: TextField(
                 controller: _textController,
-                enabled: !isDisabled,
-                decoration: InputDecoration(
-                  hintText: isDisabled ? 'Chat tidak tersedia' : 'Ketik pesan...',
+                decoration: const InputDecoration(
+                  hintText: 'Ketik pesan ke dokter...',
                   border: InputBorder.none,
-                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                  hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
+                onSubmitted: (_) => _sendMessage(myId),
               ),
             ),
           ),
           const SizedBox(width: 12),
           GestureDetector(
-            onTap: isDisabled ? null : () => _sendMessage(patientId),
+            onTap: () => _sendMessage(myId),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDisabled ? Colors.grey : const Color(0xFF40B4FF),
-                borderRadius: BorderRadius.circular(24),
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: Color(0xFF40B4FF),
+                shape: BoxShape.circle,
               ),
-              child: const Text(
-                'Kirim',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
+              child: const Icon(Icons.send, color: Colors.white, size: 20),
             ),
           ),
         ],
