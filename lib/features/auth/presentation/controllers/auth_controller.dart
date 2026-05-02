@@ -119,11 +119,15 @@ class AuthController extends StateNotifier<AuthState> {
       final user = await _getMeUseCase();
       if (user != null) {
         state = state.copyWith(user: user);
+
+        // Persist user info so other parts (e.g. ChatController) can access it
+        final prefs = await SharedPreferences.getInstance();
+        if (user.id != null) await prefs.setString('user_id', user.id!);
+        if (user.role != null) await prefs.setString('user_role', user.role!);
+        if (user.name != null) await prefs.setString('user_name', user.name!);
       }
     } catch (e) {
       print('Failed to fetch user data: $e');
-      // If fetching user fails due to 401, interceptor will try to refresh.
-      // If that fails, the interceptor clears tokens.
     }
   }
 

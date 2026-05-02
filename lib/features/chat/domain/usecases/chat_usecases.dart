@@ -1,20 +1,42 @@
 import '../entities/chat_message.dart';
 import '../repositories/chat_repository.dart';
 
-class GetChatHistoryUseCase {
+/// Provides a real-time stream of chat messages for a given room.
+class GetMessagesUseCase {
   final ChatRepository repository;
-  GetChatHistoryUseCase(this.repository);
+  GetMessagesUseCase(this.repository);
 
-  Future<List<ChatMessage>> call(String patientId) async {
-    return await repository.getChatHistory(patientId);
+  Stream<List<ChatMessage>> call(String roomId) {
+    return repository.getMessages(roomId);
   }
 }
 
+/// Sends a message to a chat room.
 class SendMessageUseCase {
   final ChatRepository repository;
   SendMessageUseCase(this.repository);
 
-  Future<ChatMessage> call(String patientId, String message) async {
-    return await repository.sendMessage(patientId, message);
+  Future<void> call({
+    required String roomId,
+    required String senderId,
+    required String senderRole,
+    required String message,
+  }) {
+    return repository.sendMessage(
+      roomId: roomId,
+      senderId: senderId,
+      senderRole: senderRole,
+      message: message,
+    );
+  }
+}
+
+/// Resolves (or creates) a Firestore chat room for a doctor-patient pair.
+class ResolveRoomUseCase {
+  final ChatRepository repository;
+  ResolveRoomUseCase(this.repository);
+
+  Future<String> call({required String patientId, required String doctorId}) {
+    return repository.resolveRoom(patientId: patientId, doctorId: doctorId);
   }
 }
