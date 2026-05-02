@@ -14,8 +14,10 @@ import '../../../auth/presentation/controllers/auth_controller.dart';
 /// The controller detects role='patient' from SharedPreferences and resolves the room correctly.
 class ChatPage extends ConsumerStatefulWidget {
   final String? doctorName;
+  final String? doctorId;
+  final String? medicalRecordId;
 
-  const ChatPage({super.key, this.doctorName});
+  const ChatPage({super.key, this.doctorName, this.doctorId, this.medicalRecordId});
 
   @override
   ConsumerState<ChatPage> createState() => _ChatPageState();
@@ -33,6 +35,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _loadMedicalRecordId() async {
+    if (widget.medicalRecordId != null && widget.medicalRecordId!.isNotEmpty) {
+      if (mounted) setState(() => _medicalRecordId = widget.medicalRecordId!);
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     final recordId = prefs.getString('medical_record_id') ?? '';
     if (mounted) setState(() => _medicalRecordId = recordId);
@@ -45,9 +51,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     super.dispose();
   }
 
-  void _sendMessage(String patientId) {
+  void _sendMessage(String myId) {
     if (_textController.text.trim().isEmpty) return;
-    ref.read(chatControllerProvider((patientId: patientId, medicalRecordId: _medicalRecordId)).notifier)
+    ref.read(chatControllerProvider((otherUserId: widget.doctorId ?? '', medicalRecordId: _medicalRecordId)).notifier)
         .sendMessage(_textController.text.trim());
     _textController.clear();
     _scrollToBottom();
@@ -78,7 +84,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       );
     }
 
-    final chatParams = (patientId: myId, medicalRecordId: _medicalRecordId);
+    final chatParams = (otherUserId: widget.doctorId ?? '', medicalRecordId: _medicalRecordId);
     final chatState = ref.watch(chatControllerProvider(chatParams));
 
     ref.listen(chatControllerProvider(chatParams), (previous, next) {

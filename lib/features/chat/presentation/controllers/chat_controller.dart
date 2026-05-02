@@ -185,7 +185,7 @@ class ChatController extends StateNotifier<ChatState> {
 /// - For DOCTOR: patientId = patient's ID, medicalRecordId = patient's latest record ID
 /// - For PATIENT: patientId = own user ID,  medicalRecordId = own medical record ID
 final chatControllerProvider = StateNotifierProvider.family<
-    ChatController, ChatState, ({String patientId, String medicalRecordId})>(
+    ChatController, ChatState, ({String otherUserId, String medicalRecordId})>(
   (ref, params) {
     final controller = ChatController(
       ref.watch(getMessagesUseCaseProvider),
@@ -203,13 +203,13 @@ final chatControllerProvider = StateNotifierProvider.family<
       String doctorId;
 
       if (myRole == 'patient') {
-        // I am the patient — patientId is my own ID
+        // I am the patient — otherUserId is the doctor's ID (not strictly needed now)
         patientId = myId;
-        doctorId = params.patientId.isNotEmpty ? params.patientId : 'default_doctor';
+        doctorId = 'default_doctor';
       } else {
-        // I am the doctor — patientId is the patient's ID from params
-        patientId = params.patientId;
-        doctorId = myId.isNotEmpty ? myId : 'default_doctor';
+        // I am the doctor — otherUserId is the patient's ID
+        patientId = params.otherUserId;
+        doctorId = 'default_doctor';
       }
 
       await controller.initRoom(
