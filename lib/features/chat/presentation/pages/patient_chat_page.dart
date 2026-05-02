@@ -58,7 +58,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   void _sendMessage() {
     if (_textController.text.trim().isEmpty) return;
-    ref.read(chatControllerProvider((patientId: widget.patientId, medicalRecordId: _medicalRecordId)).notifier)
+    ref.read(chatControllerProvider((otherUserId: widget.patientId, medicalRecordId: _medicalRecordId)).notifier)
         .sendMessage(_textController.text.trim());
     _textController.clear();
     _scrollToBottom();
@@ -78,7 +78,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final chatParams = (patientId: widget.patientId, medicalRecordId: _medicalRecordId);
+    final chatParams = (otherUserId: widget.patientId, medicalRecordId: _medicalRecordId);
     final chatState = ref.watch(chatControllerProvider(chatParams));
 
     // Auto-scroll when new messages arrive
