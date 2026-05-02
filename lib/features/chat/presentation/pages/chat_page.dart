@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../domain/entities/chat_message.dart';
@@ -23,6 +24,19 @@ class ChatPage extends ConsumerStatefulWidget {
 class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  String _medicalRecordId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMedicalRecordId();
+  }
+
+  Future<void> _loadMedicalRecordId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final recordId = prefs.getString('medical_record_id') ?? '';
+    if (mounted) setState(() => _medicalRecordId = recordId);
+  }
 
   @override
   void dispose() {
@@ -33,9 +47,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   void _sendMessage(String patientId) {
     if (_textController.text.trim().isEmpty) return;
-    ref.read(chatControllerProvider(patientId).notifier).sendMessage(
-      _textController.text.trim(),
-    );
+    ref.read(chatControllerProvider((patientId: patientId, medicalRecordId: _medicalRecordId)).notifier)
+        .sendMessage(_textController.text.trim());
     _textController.clear();
     _scrollToBottom();
   }
@@ -65,9 +78,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       );
     }
 
-    final chatState = ref.watch(chatControllerProvider(myId));
+    final chatParams = (patientId: myId, medicalRecordId: _medicalRecordId);
+    final chatState = ref.watch(chatControllerProvider(chatParams));
 
-    ref.listen(chatControllerProvider(myId), (previous, next) {
+    ref.listen(chatControllerProvider(chatParams), (previous, next) {
       if (previous != null && next.messages.length > previous.messages.length) {
         _scrollToBottom();
       }
