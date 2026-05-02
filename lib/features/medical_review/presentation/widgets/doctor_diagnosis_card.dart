@@ -1,17 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 
-class DoctorDiagnosisCard extends StatelessWidget {
+class DoctorDiagnosisCard extends StatefulWidget {
   final bool? agree;
+  final String? initialNote;
   final ValueChanged<bool>? onAgreeChanged;
   final ValueChanged<String>? onNoteChanged;
 
   const DoctorDiagnosisCard({
     super.key,
     this.agree,
+    this.initialNote,
     this.onAgreeChanged,
     this.onNoteChanged,
   });
+
+  @override
+  State<DoctorDiagnosisCard> createState() => _DoctorDiagnosisCardState();
+}
+
+class _DoctorDiagnosisCardState extends State<DoctorDiagnosisCard> {
+  late TextEditingController _noteController;
+
+  @override
+  void initState() {
+    super.initState();
+    _noteController = TextEditingController(text: widget.initialNote);
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +59,14 @@ class DoctorDiagnosisCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _buildRadioOption("Agree", true, AppColors.statusNormal),
-          _buildRadioOption("Disagree", false, AppColors.statusMalignant),
+          GestureDetector(
+            onTap: () => widget.onAgreeChanged?.call(true),
+            child: _buildRadioOption("Agree", true, AppColors.statusNormal),
+          ),
+          GestureDetector(
+            onTap: () => widget.onAgreeChanged?.call(false),
+            child: _buildRadioOption("Disagree", false, AppColors.statusMalignant),
+          ),
           const SizedBox(height: 20),
           const Text(
             "Add Note",
@@ -59,7 +86,8 @@ class DoctorDiagnosisCard extends StatelessWidget {
               border: Border.all(color: Colors.grey.shade200),
             ),
             child: TextField(
-              onChanged: onNoteChanged,
+              controller: _noteController,
+              onChanged: widget.onNoteChanged,
               decoration: InputDecoration(
                 hintText: 'Type here...',
                 hintStyle: TextStyle(
@@ -77,7 +105,7 @@ class DoctorDiagnosisCard extends StatelessWidget {
   }
 
   Widget _buildRadioOption(String label, bool value, Color color) {
-    bool isSelected = agree == value;
+    bool isSelected = widget.agree == value;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(

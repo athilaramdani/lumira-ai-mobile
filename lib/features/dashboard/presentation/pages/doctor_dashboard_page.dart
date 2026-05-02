@@ -25,6 +25,9 @@ class PatientData {
   final String phone;
   final String? rawImage;
   final String? gradCamImage;
+  final String? initialDoctorDiagnosis;
+  final String? initialDoctorNote;
+  final String? initialAgreement;
 
   PatientData({
     required this.name,
@@ -38,6 +41,9 @@ class PatientData {
     required this.phone,
     this.rawImage,
     this.gradCamImage,
+    this.initialDoctorDiagnosis,
+    this.initialDoctorNote,
+    this.initialAgreement,
   });
 }
 
@@ -70,9 +76,21 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
       final latestRecord = patient.latestRecord ?? 
           (patient.medicalRecords?.isNotEmpty == true ? patient.medicalRecords!.first : null);
           
-      final isDone = latestRecord?.validationStatus?.toUpperCase() == 'DONE' || 
-                     latestRecord?.validationStatus?.toUpperCase() == 'VALIDATED' || 
-                     latestRecord?.doctorDiagnosis != null;
+      final status = latestRecord?.validationStatus?.toUpperCase();
+      
+      // Determine if a review already exists.
+      // Backend might return empty strings or "null" literal if no review exists yet.
+      bool hasReview = false;
+      final diag = latestRecord?.doctorDiagnosis?.trim().toLowerCase();
+      if (diag != null && diag.isNotEmpty && diag != 'null') {
+        hasReview = true;
+      }
+      final agree = latestRecord?.agreement?.trim().toLowerCase();
+      if (agree != null && agree.isNotEmpty && agree != 'null') {
+        hasReview = true;
+      }
+      
+      final isDone = status == 'DONE' || status == 'VALIDATED' || hasReview;
       
       final aiDiagnosisRaw = latestRecord?.resultLabel?.toLowerCase() ?? '';
       AIResult aiResultVar = AIResult.unknown;
@@ -95,7 +113,10 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
         filterCategory: isDone ? 'done' : 'waiting',
         phone: patient.contactNumber ?? '08123456789',
         rawImage: latestRecord?.imageUrl,
-        gradCamImage: latestRecord?.resultLabel != null ? (latestRecord?.imageUrl) : null, // Backend aiGradCamImage isn't mapped inside latestRecord in our model, let's just pass null if not available
+        gradCamImage: latestRecord?.gradcamImageUrl,
+        initialDoctorDiagnosis: latestRecord?.doctorDiagnosis,
+        initialDoctorNote: latestRecord?.doctorNotes,
+        initialAgreement: latestRecord?.agreement,
       );
     }).toList();
   }
@@ -278,6 +299,9 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
         phone: p.phone,
         rawImage: p.rawImage,
         gradCamImage: p.gradCamImage,
+        initialDoctorDiagnosis: p.initialDoctorDiagnosis,
+        initialDoctorNote: p.initialDoctorNote,
+        initialAgreement: p.initialAgreement,
       )).toList(),
     );
   }
