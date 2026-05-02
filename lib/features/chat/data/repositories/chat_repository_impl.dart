@@ -34,10 +34,18 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<String> resolveRoom({
     required String patientId,
     required String doctorId,
+    required String medicalRecordId,
   }) {
     return remoteDataSource.resolveRoom(
       patientId: patientId,
       doctorId: doctorId,
+      medicalRecordId: medicalRecordId,
     );
   }
+
+  @override
+  Future<void> mintFirebaseToken() => remoteDataSource.mintFirebaseToken();
+
+  @override
+  Future<List<dynamic>> getRooms() => remoteDataSource.getRooms();
 }
