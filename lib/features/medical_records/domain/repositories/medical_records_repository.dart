@@ -12,7 +12,16 @@ abstract class MedicalRecordsRepository {
     required String recordId,
     required String agreement,
     required String note,
-    File? heatmapImage,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
+  });
+
+  Future<void> editReviewMedicalRecord({
+    required String recordId,
+    required String agreement,
+    required String note,
+    String? doctorDiagnosis,
+    File? doctorBrushPath,
   });
 
   Future<MedicalRecordModel> reanalyzePatient(String patientId);
