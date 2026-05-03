@@ -8,6 +8,8 @@ class MedicalRecordModel {
   final String? createdAt;
   final String? validationStatus;
   final String? doctorDiagnosis;
+  final String? gradcamImageUrl;
+  final String? agreement;
 
   MedicalRecordModel({
     this.id,
@@ -19,6 +21,8 @@ class MedicalRecordModel {
     this.createdAt,
     this.validationStatus,
     this.doctorDiagnosis,
+    this.gradcamImageUrl,
+    this.agreement,
   });
 
   factory MedicalRecordModel.fromJson(Map<String, dynamic> json) {
@@ -30,8 +34,10 @@ class MedicalRecordModel {
       resultConfidence: (json['ai_confidence'] ?? json['result_confidence'] ?? json['resultConfidence'])?.toDouble(),
       doctorNotes: json['doctor_notes'] ?? json['doctorNotes'],
       createdAt: json['uploaded_at'] ?? json['created_at'] ?? json['createdAt'],
-      validationStatus: json['validation_status'] ?? json['validationStatus'],
+      validationStatus: json['validation_status'] ?? json['validationStatus'] ?? json['status'],
       doctorDiagnosis: json['doctor_diagnosis'] ?? json['doctorDiagnosis'],
+      gradcamImageUrl: json['ai_gradcam_path'] ?? json['gradcam_image_url'] ?? json['gradcamImageUrl'],
+      agreement: json['agreement'],
     );
   }
 }
