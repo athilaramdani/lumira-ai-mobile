@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
-import 'package:lumira_ai_mobile/features/chat/presentation/pages/medgemma_chat_page.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_chat_page.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/ai_result_interpretation_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../statistics/presentation/controllers/statistics_controller.dart';
