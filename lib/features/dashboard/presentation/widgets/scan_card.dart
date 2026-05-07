@@ -14,6 +14,7 @@ class ScanCard extends StatelessWidget {
   final String? verifiedDate;
   final String? verifiedTime;
   final String? result;
+  final bool isPatientView;
 
   const ScanCard({
     super.key,
@@ -26,6 +27,7 @@ class ScanCard extends StatelessWidget {
     this.verifiedDate,
     this.verifiedTime,
     this.result,
+    this.isPatientView = false,
   });
 
   Color _getAIResultColor(String? resultText) {
@@ -145,24 +147,51 @@ class ScanCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // 3. Done Button
+            // 3. Action Button
             Align(
               alignment: Alignment.centerRight,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.btnDone,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Done',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              child: isPatientView
+                  ? ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatPage(
+                              doctorName: doctorName,
+                              medicalRecordId: scanId,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.email_outlined, size: 16, color: Colors.white),
+                      label: const Text(
+                        'Chat',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.btnDone,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),
@@ -226,6 +255,8 @@ class ScanCard extends StatelessWidget {
       ),
     );
   }
+
+
 
   Widget _buildInReviewBody() {
     return Row(
