@@ -10,8 +10,10 @@ import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/custom_
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/consult_ai_view.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/history_view.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_view.dart';
+import 'package:lumira_ai_mobile/features/chat/presentation/pages/doctor_chat_list_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../statistics/presentation/controllers/statistics_controller.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -45,41 +47,45 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           });
         },
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            if (_currentNavIndex != 3)
-              const DashboardHeader(),
-            
-            if (_currentNavIndex == 0)
-              _buildStatsContent(),
-              
-            if (_currentNavIndex == 1)
-              const ConsultAiView(),
-              
-            if (_currentNavIndex == 2)
-              const HistoryView(),
-              
-            if (_currentNavIndex == 3)
-              const ProfileView(),
-          ],
-        ),
-      ),
+      body: _currentNavIndex == 2
+          ? const DoctorChatListPage()
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  if (_currentNavIndex != 4)
+                    const DashboardHeader(),
+                  
+                  if (_currentNavIndex == 0)
+                    _buildStatsContent(),
+                    
+                  if (_currentNavIndex == 1)
+                    const ConsultAiView(),
+                    
+                  if (_currentNavIndex == 3)
+                    const HistoryView(),
+                    
+                  if (_currentNavIndex == 4)
+                    const ProfileView(),
+                ],
+              ),
+            ),
     );
   }
 
   Widget _buildStatsContent() {
     final statsState = ref.watch(statisticsControllerProvider);
+    final authState = ref.watch(authControllerProvider);
     final activities = statsState.activities;
+    final isPatient = authState.user?.role?.toLowerCase() == 'patient';
 
-    int inReviewCount = 0;
+    int pendingCount = 0;
     int doneCount = 0;
     int totalCount = activities.length;
 
     for (final activity in activities) {
       final statusStr = activity['status']?.toString().toLowerCase() ?? '';
-      if (statusStr == 'review' || statusStr == 'in_review') {
-        inReviewCount++;
+      if (statusStr == 'pending') {
+        pendingCount++;
       } else if (statusStr == 'done' || statusStr == 'validated') {
         doneCount++;
       }
@@ -101,7 +107,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           if (statusStr == 'review' || statusStr == 'in_review') status = ScanStatus.inReview;
           if (statusStr == 'pending') status = ScanStatus.pending;
 
-          if (_selectedTabIndex == 1 && status != ScanStatus.inReview) return const SizedBox.shrink();
+          if (_selectedTabIndex == 1 && status != ScanStatus.pending) return const SizedBox.shrink();
           if (_selectedTabIndex == 2 && status != ScanStatus.done) return const SizedBox.shrink();
 
           return ScanCard(
@@ -110,6 +116,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             patientName: activity['patient_name'],
             result: resultLabel,
             doctorName: activity['doctor_name'],
+            queuePosition: activity['queue_position']?.toString(),
+            verifiedDate: activity['verified_date']?.toString(),
+            isPatientView: isPatient,
           );
         }).whereType<Widget>().toList();
 
@@ -125,8 +134,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   child: StatCard(
                     isActive: _selectedTabIndex == 1,
                     icon: Icons.timer_outlined,
-                    label: 'In Review',
-                    count: inReviewCount,
+                    label: 'Pending',
+                    count: pendingCount,
                     iconColor: AppColors.error,
                     onTap: () => setState(() => _selectedTabIndex = 1),
                   ),

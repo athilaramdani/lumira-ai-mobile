@@ -47,19 +47,27 @@ class CustomBottomNav extends StatelessWidget {
                 },
               ),
               _buildNavItem(
-                icon: Icons.history, // History icon
-                label: 'History',
+                icon: Icons.chat, // Chat icon
+                label: 'Chat',
                 isActive: currentIndex == 2,
                 onTap: () {
                   if (onTabSelected != null) onTabSelected!(2);
                 },
               ),
               _buildNavItem(
-                icon: Icons.person, // Profile icon
-                label: 'Profile',
+                icon: Icons.history, // History icon
+                label: 'History',
                 isActive: currentIndex == 3,
                 onTap: () {
                   if (onTabSelected != null) onTabSelected!(3);
+                },
+              ),
+              _buildNavItem(
+                icon: Icons.person, // Profile icon
+                label: 'Profile',
+                isActive: currentIndex == 4,
+                onTap: () {
+                  if (onTabSelected != null) onTabSelected!(4);
                 },
               ),
             ],

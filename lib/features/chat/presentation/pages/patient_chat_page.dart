@@ -10,7 +10,7 @@ import '../controllers/chat_controller.dart';
 import '../../../patients/presentation/controllers/patients_controller.dart';
 import 'package:lumira_ai_mobile/features/medical_review/presentation/pages/medical_review_page.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/patient_card.dart';
-import 'medgemma_chat_page.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_chat_page.dart';
 
 class PatientChatPage extends ConsumerStatefulWidget {
   final String patientName;
