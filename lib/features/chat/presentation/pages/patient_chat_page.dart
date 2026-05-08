@@ -59,7 +59,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   void _sendMessage() {
     if (_textController.text.trim().isEmpty) return;
-    ref.read(chatControllerProvider((otherUserId: widget.patientId, medicalRecordId: '')).notifier)
+    ref.read(chatControllerProvider((otherUserId: widget.patientId, medicalRecordId: _medicalRecordId)).notifier)
         .sendMessage(_textController.text.trim());
     _textController.clear();
     _scrollToBottom();
@@ -79,8 +79,11 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Always use empty string for medicalRecordId to match the general patient-doctor room
-    final chatParams = (otherUserId: widget.patientId, medicalRecordId: '');
+    if (_isLoadingPatient) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final chatParams = (otherUserId: widget.patientId, medicalRecordId: _medicalRecordId);
     final chatState = ref.watch(chatControllerProvider(chatParams));
 
     // Auto-scroll when new messages arrive
@@ -220,7 +223,8 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   Widget _buildMessageBubble(ChatMessage message) {
     // Assuming local user is doctor -> senderRole could be 'doctor' or 'optimistic'
-    final isDoctor = message.senderRole == 'doctor' || message.senderRole == 'optimistic';
+    final role = message.senderRole.toLowerCase();
+    final isDoctor = role == 'doctor' || role == 'optimistic';
 
     return Align(
       alignment: isDoctor ? Alignment.centerRight : Alignment.centerLeft,
@@ -376,7 +380,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
   }
 
   Widget _buildInputArea() {
-    final isDisabled = _isLoadingPatient || !_hasMedicalRecord;
+    final isDisabled = _isLoadingPatient;
 
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 8),

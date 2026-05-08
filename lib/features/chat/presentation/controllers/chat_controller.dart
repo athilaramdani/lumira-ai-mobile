@@ -202,14 +202,14 @@ final chatControllerProvider = StateNotifierProvider.family<
       String patientId;
       String doctorId;
 
-      if (myRole == 'patient') {
-        // I am the patient — otherUserId is the doctor's ID (not strictly needed now)
+      if (myRole.toLowerCase() == 'patient') {
+        // I am the patient — otherUserId is the doctor's ID
         patientId = myId;
-        doctorId = 'default_doctor';
+        doctorId = params.otherUserId.isNotEmpty ? params.otherUserId : 'default_doctor';
       } else {
         // I am the doctor — otherUserId is the patient's ID
-        patientId = params.otherUserId;
-        doctorId = 'default_doctor';
+        patientId = params.otherUserId.isNotEmpty ? params.otherUserId : 'default_patient';
+        doctorId = myId;
       }
 
       await controller.initRoom(
