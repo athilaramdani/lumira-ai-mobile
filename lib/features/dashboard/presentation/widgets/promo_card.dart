@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
-import 'package:lumira_ai_mobile/features/chat/presentation/pages/medgemma_chat_page.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_chat_page.dart';
 
 class PromoCard extends StatelessWidget {
   const PromoCard({super.key});

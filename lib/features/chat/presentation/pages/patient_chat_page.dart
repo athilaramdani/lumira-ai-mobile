@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,7 +10,7 @@ import '../controllers/chat_controller.dart';
 import '../../../patients/presentation/controllers/patients_controller.dart';
 import 'package:lumira_ai_mobile/features/medical_review/presentation/pages/medical_review_page.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/patient_card.dart';
-import 'medgemma_chat_page.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_chat_page.dart';
 
 class PatientChatPage extends ConsumerStatefulWidget {
   final String patientName;
@@ -58,7 +59,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   void _sendMessage() {
     if (_textController.text.trim().isEmpty) return;
-    ref.read(chatControllerProvider((otherUserId: widget.patientId, medicalRecordId: _medicalRecordId)).notifier)
+    ref.read(chatControllerProvider((otherUserId: widget.patientId, medicalRecordId: '')).notifier)
         .sendMessage(_textController.text.trim());
     _textController.clear();
     _scrollToBottom();
@@ -78,7 +79,8 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final chatParams = (otherUserId: widget.patientId, medicalRecordId: _medicalRecordId);
+    // Always use empty string for medicalRecordId to match the general patient-doctor room
+    final chatParams = (otherUserId: widget.patientId, medicalRecordId: '');
     final chatState = ref.watch(chatControllerProvider(chatParams));
 
     // Auto-scroll when new messages arrive
@@ -305,6 +307,18 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
     final patient = await ref.read(patientsControllerProvider.notifier).getPatientById(widget.patientId);
     final latestRecord = patient?.latestRecord ?? (patient?.medicalRecords?.isNotEmpty == true ? patient!.medicalRecords!.first : null);
 
+    bool hasReview = false;
+    final diag = latestRecord?.doctorDiagnosis?.trim().toLowerCase();
+    if (diag != null && diag.isNotEmpty && diag != 'null') {
+      hasReview = true;
+    }
+    final agree = latestRecord?.agreement?.trim().toLowerCase();
+    if (agree != null && agree.isNotEmpty && agree != 'null') {
+      hasReview = true;
+    }
+    final status = latestRecord?.validationStatus?.toUpperCase();
+    final isDone = status == 'DONE' || status == 'VALIDATED' || hasReview;
+
     if (!mounted) return;
     Navigator.push(
       context,
@@ -316,7 +330,11 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
           aiResult: AIResult.unknown,
           phone: patient?.contactNumber ?? '08123456789',
           rawImage: latestRecord?.imageUrl,
-          gradCamImage: latestRecord?.imageUrl,
+          gradCamImage: latestRecord?.gradcamImageUrl,
+          isDone: isDone,
+          initialDoctorDiagnosis: latestRecord?.doctorDiagnosis,
+          initialDoctorNote: latestRecord?.doctorNotes,
+          initialAgreement: latestRecord?.agreement,
         ),
       ),
     );

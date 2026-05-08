@@ -18,6 +18,9 @@ class PatientCard extends StatelessWidget {
   final String phone;
   final String? rawImage;
   final String? gradCamImage;
+  final String? initialDoctorDiagnosis;
+  final String? initialDoctorNote;
+  final String? initialAgreement;
 
   const PatientCard({
     super.key,
@@ -31,6 +34,9 @@ class PatientCard extends StatelessWidget {
     required this.phone,
     this.rawImage,
     this.gradCamImage,
+    this.initialDoctorDiagnosis,
+    this.initialDoctorNote,
+    this.initialAgreement,
   });
 
   Color _getAIResultColor() {
@@ -190,6 +196,9 @@ class PatientCard extends StatelessWidget {
                         rawImage: rawImage,
                         gradCamImage: gradCamImage,
                         isDone: actionLabel == 'Done',
+                        initialDoctorDiagnosis: initialDoctorDiagnosis,
+                        initialDoctorNote: initialDoctorNote,
+                        initialAgreement: initialAgreement,
                       ),
                     ),
                   );

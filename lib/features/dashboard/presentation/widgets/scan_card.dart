@@ -14,6 +14,7 @@ class ScanCard extends StatelessWidget {
   final String? verifiedDate;
   final String? verifiedTime;
   final String? result;
+  final bool isPatientView;
 
   const ScanCard({
     super.key,
@@ -26,12 +27,180 @@ class ScanCard extends StatelessWidget {
     this.verifiedDate,
     this.verifiedTime,
     this.result,
+    this.isPatientView = false,
   });
+
+  Color _getAIResultColor(String? resultText) {
+    final label = resultText?.toLowerCase() ?? '';
+    if (label.contains('malignant')) return AppColors.statusMalignant;
+    if (label.contains('benign')) return AppColors.statusBenign;
+    if (label.contains('normal')) return AppColors.statusNormal;
+    return AppColors.statusUnknown;
+  }
 
   @override
   Widget build(BuildContext context) {
+    // If status is DONE, use the style requested by user (matching Doctor's PatientCard)
+    if (status == ScanStatus.done) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 1. Profile Picture
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.blue.shade100, width: 2),
+                    image: const DecorationImage(
+                      image: AssetImage(AppAssets.doctorProfile),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 15),
+                // 2. Info Section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            patientName ?? 'User',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'ID: $scanId',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // AI Result
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          children: [
+                            const TextSpan(text: 'AI Result:  '),
+                            TextSpan(
+                              text: result ?? 'Unknown',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: _getAIResultColor(result),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Image Status
+                      Row(
+                        children: [
+                          const Text(
+                            'Image: ',
+                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                          const Text(
+                            'Yes',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.statusNormal,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: AppColors.statusNormal,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // 3. Action Button
+            Align(
+              alignment: Alignment.centerRight,
+              child: isPatientView
+                  ? ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatPage(
+                              doctorName: doctorName,
+                              medicalRecordId: scanId,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.email_outlined, size: 16, color: Colors.white),
+                      label: const Text(
+                        'Chat',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.btnDone,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Default layout for other statuses
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 16, left: 20, right: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -47,10 +216,8 @@ class ScanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row: Scan ID & Badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,24 +244,19 @@ class ScanCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-
-          // Dynamic Body based on status
           if (status == ScanStatus.inReview) ...[
             _buildInReviewBody(),
           ] else if (status == ScanStatus.pending) ...[
             _buildPendingBody(),
-          ] else if (status == ScanStatus.done) ...[
-            _buildDoneBody(),
           ],
-          
           const SizedBox(height: 20),
-
-          // Actions based on status
           _buildActionButtons(context),
         ],
       ),
     );
   }
+
+
 
   Widget _buildInReviewBody() {
     return Row(
@@ -118,8 +280,8 @@ class ScanCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.person, color: AppColors.primary, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.person, color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
                 Text(
                   patientName ?? 'Patient',
                   style: const TextStyle(
@@ -129,12 +291,12 @@ class ScanCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 8),
-            Row(
+            const SizedBox(height: 8),
+            const Row(
               children: [
-                const Icon(Icons.schedule, color: AppColors.primary, size: 20),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.schedule, color: AppColors.primary, size: 20),
+                SizedBox(width: 8),
+                Text(
                   '~4 hours remaining',
                   style: TextStyle(
                     color: AppColors.textSecondary,
@@ -227,167 +389,12 @@ class ScanCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDoneBody() {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircleAvatar(
-                        radius: 8,
-                        backgroundImage: AssetImage(AppAssets.doctor),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        doctorName ?? 'Dr. Rani',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Verified Date',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        verifiedDate ?? '20 March 2026',
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        verifiedTime ?? '19:53 PM',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 1,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.success),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 6),
-                  child: Text(
-                    'Result',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.success,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: const BoxDecoration(
-                    color: AppColors.success,
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
-                  ),
-                  child: Text(
-                    result ?? '-',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildActionButtons(BuildContext context) {
     if (status == ScanStatus.pending) {
       return const SizedBox.shrink();
     }
 
     if (status == ScanStatus.inReview) {
-      return Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ChatPage(
-                    doctorName: doctorName,
-                    medicalRecordId: scanId,
-                  )),
-                );
-              },
-              icon: const Icon(Icons.chat_bubble_outline, size: 18),
-              label: const Text(
-                'Chat with Doctor',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    if (status == ScanStatus.done) {
       return Column(
         children: [
           SizedBox(
