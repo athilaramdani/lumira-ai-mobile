@@ -36,6 +36,9 @@ class HistoryView extends ConsumerWidget {
                   date: record.createdAt?.toString() ?? 'Recent',
                   result: record.resultLabel?.toString().toUpperCase() ?? 'UNKNOWN',
                   icon: Icons.medical_services_outlined,
+                  doctorId: record.doctor != null ? record.doctor!['id']?.toString() ?? '' : '',
+                  doctorName: record.doctor != null ? record.doctor!['name']?.toString() ?? 'Dokter' : 'Dokter',
+                  medicalRecordId: record.id?.toString() ?? '',
                 );
               }).whereType<Widget>().toList();
 
@@ -109,8 +112,12 @@ class HistoryView extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Permanent chat card — always visible if patient is diagnosed
-                _buildActiveChatCard(context),
+                _buildActiveChatCard(
+                  context,
+                  doctorId: medicalRecords.first.doctor != null ? medicalRecords.first.doctor!['id']?.toString() ?? '' : '',
+                  doctorName: medicalRecords.first.doctor != null ? medicalRecords.first.doctor!['name']?.toString() ?? 'Dokter' : 'Dokter',
+                  medicalRecordId: medicalRecords.first.id?.toString() ?? '',
+                ),
 
                 // Previous consultation cards (from activities)
                 if (dynamicChatCards.isNotEmpty) ...[
@@ -163,6 +170,9 @@ class HistoryView extends ConsumerWidget {
     required String date,
     required String result,
     required IconData icon,
+    required String doctorId,
+    required String doctorName,
+    required String medicalRecordId,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -287,7 +297,7 @@ class HistoryView extends ConsumerWidget {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
-                _navigateToChat(context, doctorName: 'Dr Bachtiar (via History Settings)');
+                _navigateToChat(context, doctorName: doctorName, doctorId: doctorId, medicalRecordId: medicalRecordId);
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF0EA5E9),
@@ -314,9 +324,11 @@ class HistoryView extends ConsumerWidget {
     required String role,
     required String relatedId,
     required String date,
+    required String doctorId,
+    required String medicalRecordId,
   }) {
     return GestureDetector(
-      onTap: () => _navigateToChat(context, doctorName: doctorName),
+      onTap: () => _navigateToChat(context, doctorName: doctorName, doctorId: doctorId, medicalRecordId: medicalRecordId),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -393,9 +405,9 @@ class HistoryView extends ConsumerWidget {
   }
 
   /// Active chat card — always visible so patient can always open chat
-  Widget _buildActiveChatCard(BuildContext context) {
+  Widget _buildActiveChatCard(BuildContext context, {required String doctorId, required String doctorName, required String medicalRecordId}) {
     return GestureDetector(
-      onTap: () => _navigateToChat(context, doctorName: 'Dokter Anda'),
+      onTap: () => _navigateToChat(context, doctorName: doctorName, doctorId: doctorId, medicalRecordId: medicalRecordId),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -466,11 +478,11 @@ class HistoryView extends ConsumerWidget {
     );
   }
 
-  void _navigateToChat(BuildContext context, {required String doctorName}) {
+  void _navigateToChat(BuildContext context, {required String doctorName, required String doctorId, required String medicalRecordId}) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ChatPage(doctorName: doctorName),
+        builder: (_) => ChatPage(doctorName: doctorName, doctorId: doctorId, medicalRecordId: medicalRecordId),
       ),
     );
   }

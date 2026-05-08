@@ -116,6 +116,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             patientName: activity['patient_name'],
             result: resultLabel,
             doctorName: activity['doctor_name'],
+            doctorId: activity['doctor_id']?.toString(),
             queuePosition: activity['queue_position']?.toString(),
             verifiedDate: activity['verified_date']?.toString(),
             isPatientView: isPatient,

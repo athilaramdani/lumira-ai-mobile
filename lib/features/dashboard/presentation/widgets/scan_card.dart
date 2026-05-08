@@ -11,6 +11,7 @@ class ScanCard extends StatelessWidget {
   final String? waitTime;
   final String? queuePosition;
   final String? doctorName;
+  final String? doctorId;
   final String? verifiedDate;
   final String? verifiedTime;
   final String? result;
@@ -24,6 +25,7 @@ class ScanCard extends StatelessWidget {
     this.waitTime,
     this.queuePosition,
     this.doctorName,
+    this.doctorId,
     this.verifiedDate,
     this.verifiedTime,
     this.result,
@@ -157,6 +159,7 @@ class ScanCard extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => ChatPage(
+                              doctorId: doctorId,
                               doctorName: doctorName,
                               medicalRecordId: scanId,
                             ),
@@ -404,6 +407,7 @@ class ScanCard extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ChatPage(
+                    doctorId: doctorId,
                     doctorName: doctorName,
                     medicalRecordId: scanId,
                   )),
