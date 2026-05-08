@@ -1,47 +1,83 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/widgets/custom_search_bar.dart';
 import 'chat_page.dart';
+import '../../../patients/presentation/controllers/patients_controller.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 
-class DoctorChatListPage extends StatefulWidget {
+class DoctorChatListPage extends ConsumerStatefulWidget {
   const DoctorChatListPage({super.key});
 
   @override
-  State<DoctorChatListPage> createState() => _DoctorChatListPageState();
+  ConsumerState<DoctorChatListPage> createState() => _DoctorChatListPageState();
 }
 
-class _DoctorChatListPageState extends State<DoctorChatListPage> {
+class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
   String _searchQuery = '';
+  List<Map<String, dynamic>> _doctors = [];
+  bool _isLoading = true;
 
-  // Mock list of doctors
-  final List<Map<String, dynamic>> _doctors = [
-    {
-      'name': 'Dr. Tirta',
-      'id': 'DOC-222858',
-      'specialty': 'Oncology',
-      'isOnline': true,
-    },
-    {
-      'name': 'Dr. Boyke',
-      'id': 'DOC-506218',
-      'specialty': 'Radiology',
-      'isOnline': true,
-    },
-    {
-      'name': 'Dr. Sarah',
-      'id': 'DOC-503495',
-      'specialty': 'Oncology',
-      'isOnline': false,
-    },
-    {
-      'name': 'Dr. Budi',
-      'id': 'DOC-433580',
-      'specialty': 'Radiology',
-      'isOnline': true,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchDoctors();
+    });
+  }
+
+  Future<void> _fetchDoctors() async {
+    try {
+      final authState = ref.read(authControllerProvider);
+      final userEmail = authState.user?.email;
+      final userId = authState.user?.id;
+
+      // Ambil daftar semua pasien untuk mencari pasien yang sedang login
+      await ref.read(patientsControllerProvider.notifier).fetchPatients();
+      final patientsState = ref.read(patientsControllerProvider);
+
+      Map<String, Map<String, dynamic>> uniqueDoctors = {};
+
+      if (userEmail != null || userId != null) {
+        // Cari pasien berdasarkan email atau ID
+        final currentPatient = patientsState.patients.where((p) => 
+          (userEmail != null && p.email == userEmail) || 
+          (userId != null && p.id == userId)
+        ).firstOrNull;
+
+        if (currentPatient != null && currentPatient.medicalRecords != null) {
+          for (var record in currentPatient.medicalRecords!) {
+            if (record.doctor != null) {
+              final docId = record.doctor!['id']?.toString() ?? '';
+              if (docId.isNotEmpty && !uniqueDoctors.containsKey(docId)) {
+                uniqueDoctors[docId] = {
+                  'name': record.doctor!['name'] ?? 'Dokter',
+                  'id': docId,
+                  'specialty': 'Spesialis',
+                  'isOnline': record.doctor!['status']?.toString().toLowerCase() == 'active',
+                };
+              }
+            }
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _doctors = uniqueDoctors.values.toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,22 +118,24 @@ class _DoctorChatListPageState extends State<DoctorChatListPage> {
               },
             ),
             Expanded(
-              child: filteredDoctors.isEmpty
-                  ? const Center(child: Text('Tidak ada dokter ditemukan.'))
-                  : ListView.builder(
-                      itemCount: filteredDoctors.length,
-                      itemBuilder: (context, index) {
-                        final doctor = filteredDoctors[index];
-                        return _buildChatListItem(
-                          context,
-                          name: doctor['name'],
-                          id: doctor['id'],
-                          message: 'Ketuk untuk mulai chat',
-                          time: '',
-                          isOnline: doctor['isOnline'],
-                        );
-                      },
-                    ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredDoctors.isEmpty
+                      ? const Center(child: Text('Belum ada dokter yang menangani Anda.'))
+                      : ListView.builder(
+                          itemCount: filteredDoctors.length,
+                          itemBuilder: (context, index) {
+                            final doctor = filteredDoctors[index];
+                            return _buildChatListItem(
+                              context,
+                              name: doctor['name'],
+                              id: doctor['id'],
+                              message: 'Ketuk untuk mulai chat',
+                              time: '',
+                              isOnline: doctor['isOnline'] ?? false,
+                            );
+                          },
+                        ),
             ),
           ],
         ),
@@ -117,8 +155,7 @@ class _DoctorChatListPageState extends State<DoctorChatListPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          // Navigates to actual chat room. Here we can use ChatPage with empty room ID logic 
-          // or pass the doctor info to initiate the chat.
+          // Navigates to actual chat room.
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -146,7 +183,7 @@ class _DoctorChatListPageState extends State<DoctorChatListPage> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.blue.shade100, width: 2),
                       image: const DecorationImage(
-                        image: AssetImage(AppAssets.doctor), // Assuming doctor image is available
+                        image: AssetImage(AppAssets.doctor),
                         fit: BoxFit.cover,
                       ),
                     ),

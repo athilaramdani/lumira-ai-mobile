@@ -84,6 +84,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       );
     }
 
+    // Use empty string for medicalRecordId to match the general patient-doctor room
     final chatParams = (otherUserId: widget.doctorId ?? '', medicalRecordId: _medicalRecordId);
     final chatState = ref.watch(chatControllerProvider(chatParams));
 
@@ -211,7 +212,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    final isMe = message.senderRole == 'patient' || message.senderRole == 'optimistic';
+    final role = message.senderRole.toLowerCase();
+    final isMe = role == 'patient' || role == 'optimistic';
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
