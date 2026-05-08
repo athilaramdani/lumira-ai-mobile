@@ -1,28 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 
-class _TabItem {
-  final String label;
-  final IconData icon;
-
-  const _TabItem({required this.label, required this.icon});
-}
-
-class CategoryTabs extends StatelessWidget {
-  static const List<_TabItem> _tabs = [
-    _TabItem(label: 'All',       icon: Icons.grid_view_rounded),
-    _TabItem(label: 'In Review', icon: Icons.timer_outlined),
-    _TabItem(label: 'Done',      icon: Icons.check_circle_outline),
-  ];
-
+class PatientCategoryTabs extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int>? onTabSelected;
 
-  const CategoryTabs({
+  const PatientCategoryTabs({
     super.key,
     this.selectedIndex = 0,
     this.onTabSelected,
   });
+
+  static const List<String> _tabs = [
+    'All',
+    'Pending',
+    'In Review',
+    'Done',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +33,7 @@ class CategoryTabs extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
               margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(24),
@@ -63,24 +57,13 @@ class CategoryTabs extends StatelessWidget {
                         )
                       ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    tab.icon,
-                    size: 16,
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    tab.label,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+              child: Text(
+                tab,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 14,
+                ),
               ),
             ),
           );
