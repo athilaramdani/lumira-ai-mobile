@@ -78,13 +78,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     // The controller detects role='patient' and builds roomId = 'room_{patientId}'
     final myId = authState.user?.id ?? '';
 
-    if (myId.isEmpty) {
+    if (myId.isEmpty || _medicalRecordId.isEmpty) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // Use empty string for medicalRecordId to match the general patient-doctor room
+    // Use the loaded medicalRecordId
     final chatParams = (otherUserId: widget.doctorId ?? '', medicalRecordId: _medicalRecordId);
     final chatState = ref.watch(chatControllerProvider(chatParams));
 

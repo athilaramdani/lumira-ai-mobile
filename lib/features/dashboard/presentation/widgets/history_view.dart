@@ -82,78 +82,12 @@ class HistoryView extends ConsumerWidget {
               const SizedBox(height: 32),
 
               // Only show Chat Section if patient has at least one medical record
-              if (medicalRecords.isNotEmpty) ...[
-                // Chat Dokter Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: const [
-                    Expanded(
-                      child: Text(
-                        'Chat dengan Dokter',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'REAL-TIME',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: Color(0xFF22C55E),
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                _buildActiveChatCard(
-                  context,
-                  doctorId: medicalRecords.first.doctor != null ? medicalRecords.first.doctor!['id']?.toString() ?? '' : '',
-                  doctorName: medicalRecords.first.doctor != null ? medicalRecords.first.doctor!['name']?.toString() ?? 'Dokter' : 'Dokter',
-                  medicalRecordId: medicalRecords.first.id?.toString() ?? '',
-                ),
-
-                // Previous consultation cards (from activities)
-                if (dynamicChatCards.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  ...dynamicChatCards,
-                ],
-              ] else ...[
-                // Empty state for Chat
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(Icons.chat_bubble_outline, color: Colors.blue.shade300, size: 48),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Konsultasi Chat',
-                        style: TextStyle(
-                          color: Colors.blue.shade700,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Fitur chat dengan dokter akan terbuka setelah Anda melakukan diagnosis awal.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.blue.shade500, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              // User requested to move chat exclusively to Chat List, so we don't render it here anymore.
+              // if (medicalRecords.isNotEmpty) ...[
+              //   ... Chat Dokter Header & Chat Card ...
+              // ] else ...[
+              //   ... Empty state for Chat ...
+              // ],
 
               const SizedBox(height: 80),
             ],
