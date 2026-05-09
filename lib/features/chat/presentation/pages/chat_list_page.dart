@@ -5,6 +5,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/widgets/custom_search_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../patients/presentation/controllers/patients_controller.dart';
+import '../../../patients/data/models/patient_model.dart';
 import 'patient_chat_page.dart';
 
 class ChatListPage extends ConsumerStatefulWidget {
@@ -36,6 +37,16 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
       final id = patient.id?.toLowerCase() ?? '';
       return name.contains(query) || id.contains(query);
     }).toList();
+
+    // Inject "Test Patient" at the top of the list
+    if (!filteredPatients.any((p) => p.id == 'PAS-859317')) {
+      final testPatient = PatientModel(id: 'PAS-859317', name: 'Test Patient');
+      if (_searchQuery.isEmpty || 
+          testPatient.name!.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+          testPatient.id!.toLowerCase().contains(_searchQuery.toLowerCase())) {
+        filteredPatients.insert(0, testPatient);
+      }
+    }
 
     return Theme(
       data: Theme.of(context).copyWith(
