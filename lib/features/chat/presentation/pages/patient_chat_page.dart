@@ -302,6 +302,22 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
               ),
             );
           }),
+          const SizedBox(width: 12),
+          _buildActionButton(Icons.bug_report, 'Simulate Patient', () {
+             final roomId = ref.read(chatControllerProvider((otherUserId: widget.patientId, medicalRecordId: _medicalRecordId))).roomId;
+             if (roomId != null) {
+               ref.read(chatRemoteDataSourceProvider).sendMessage(
+                 roomId: roomId,
+                 senderId: widget.patientId,
+                 senderRole: 'patient',
+                 message: 'Halo Dok, ini pesan testing dari Test Patient!',
+               );
+             } else {
+               ScaffoldMessenger.of(context).showSnackBar(
+                 const SnackBar(content: Text('Room ID belum tersedia')),
+               );
+             }
+          }),
         ],
       ),
     );

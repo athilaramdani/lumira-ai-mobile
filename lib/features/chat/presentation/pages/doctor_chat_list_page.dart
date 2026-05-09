@@ -57,11 +57,23 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
                   'id': docId,
                   'specialty': 'Spesialis',
                   'isOnline': record.doctor!['status']?.toString().toLowerCase() == 'active',
+                  'medicalRecordId': record.id ?? '',
                 };
               }
             }
           }
         }
+      }
+
+      // Inject "Dr. John Doe" manually for testing, so the list is never empty!
+      if (!uniqueDoctors.containsKey('DOC-803413')) {
+        uniqueDoctors['DOC-803413'] = {
+          'name': 'Dr. John Doe (Testing)',
+          'id': 'DOC-803413',
+          'specialty': 'Surgical Oncologist',
+          'isOnline': true,
+          'medicalRecordId': 'MED-793414',
+        };
       }
 
       if (mounted) {
@@ -133,6 +145,7 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
                               message: 'Ketuk untuk mulai chat',
                               time: '',
                               isOnline: doctor['isOnline'] ?? false,
+                              medicalRecordId: doctor['medicalRecordId'] ?? '',
                             );
                           },
                         ),
@@ -150,6 +163,7 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
     required String message,
     required String time,
     required bool isOnline,
+    required String medicalRecordId,
   }) {
     return Material(
       color: Colors.transparent,
@@ -162,7 +176,7 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
               builder: (context) => ChatPage(
                 doctorId: id,
                 doctorName: name,
-                medicalRecordId: '',
+                medicalRecordId: medicalRecordId,
               ),
             ),
           );
