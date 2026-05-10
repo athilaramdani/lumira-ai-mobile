@@ -5,12 +5,14 @@ class ProfileTextField extends StatelessWidget {
   final String label;
   final String initialValue;
   final bool isMultiLine;
+  final ValueChanged<String>? onChanged;
 
   const ProfileTextField({
     super.key,
     required this.label,
     required this.initialValue,
     this.isMultiLine = false,
+    this.onChanged,
   });
 
   @override
@@ -18,17 +20,20 @@ class ProfileTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
+        if (label.isNotEmpty) ...[
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
+          const SizedBox(height: 4),
+        ],
         TextFormField(
           initialValue: initialValue,
+          onChanged: onChanged,
           maxLines: isMultiLine ? 3 : 1,
           style: const TextStyle(
             color: AppColors.textPrimary,

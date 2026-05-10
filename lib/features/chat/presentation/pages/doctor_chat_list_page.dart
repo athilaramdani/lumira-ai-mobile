@@ -34,19 +34,12 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
       final userEmail = authState.user?.email;
       final userId = authState.user?.id;
 
-      // Ambil daftar semua pasien untuk mencari pasien yang sedang login
-      await ref.read(patientsControllerProvider.notifier).fetchPatients();
-      final patientsState = ref.read(patientsControllerProvider);
-
       Map<String, Map<String, dynamic>> uniqueDoctors = {};
 
-      if (userEmail != null || userId != null) {
-        // Cari pasien berdasarkan email atau ID
-        final currentPatient = patientsState.patients.where((p) => 
-          (userEmail != null && p.email == userEmail) || 
-          (userId != null && p.id == userId)
-        ).firstOrNull;
-
+      if (userId != null) {
+        // Coba ambil data pasien secara spesifik dari backend
+        final currentPatient = await ref.read(patientsControllerProvider.notifier).getPatientById(userId);
+        
         if (currentPatient != null && currentPatient.medicalRecords != null) {
           for (var record in currentPatient.medicalRecords!) {
             if (record.doctor != null) {
@@ -65,10 +58,40 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
         }
       }
 
+      // Fallback jika ambil spesifik tidak berhasil, cari dari list patient
+      if (uniqueDoctors.isEmpty) {
+        await ref.read(patientsControllerProvider.notifier).fetchPatients();
+        final patientsState = ref.read(patientsControllerProvider);
+
+        if (userEmail != null || userId != null) {
+          final currentPatient = patientsState.patients.where((p) => 
+            (userEmail != null && p.email == userEmail) || 
+            (userId != null && p.id == userId)
+          ).firstOrNull;
+
+          if (currentPatient != null && currentPatient.medicalRecords != null) {
+            for (var record in currentPatient.medicalRecords!) {
+              if (record.doctor != null) {
+                final docId = record.doctor!['id']?.toString() ?? '';
+                if (docId.isNotEmpty && !uniqueDoctors.containsKey(docId)) {
+                  uniqueDoctors[docId] = {
+                    'name': record.doctor!['name'] ?? 'Dokter',
+                    'id': docId,
+                    'specialty': 'Spesialis',
+                    'isOnline': record.doctor!['status']?.toString().toLowerCase() == 'active',
+                    'medicalRecordId': record.id ?? '',
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+
       // Inject "Dr. John Doe" manually for testing, so the list is never empty!
       if (!uniqueDoctors.containsKey('DOC-803413')) {
         uniqueDoctors['DOC-803413'] = {
-          'name': 'Dr. John Doe (Testing)',
+          'name': 'Dr. John Doe',
           'id': 'DOC-803413',
           'specialty': 'Surgical Oncologist',
           'isOnline': true,

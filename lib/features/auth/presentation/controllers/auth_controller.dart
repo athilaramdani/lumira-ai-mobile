@@ -142,6 +142,10 @@ class AuthController extends StateNotifier<AuthState> {
       state = AuthState(); 
     }
   }
+
+  void updateProfileLocally(UserModel updatedUser) {
+    state = state.copyWith(user: updatedUser);
+  }
 }
 
 /// Provider untuk AuthController
