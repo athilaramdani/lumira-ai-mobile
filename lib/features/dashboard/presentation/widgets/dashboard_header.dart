@@ -21,7 +21,9 @@ class DashboardHeader extends ConsumerWidget {
           colors: [
             AppColors.headerGradientStart,
             AppColors.headerGradientStart,
+            AppColors.background,
           ],
+          stops: [0.0, 0.6, 1.0],
         ),
       ),
       padding: EdgeInsets.only(

@@ -6,6 +6,7 @@ class ProfileHeader extends StatelessWidget {
   final String patientId;
   final String patientName;
   final String imagePath;
+  final String? imageUrl;
   final VoidCallback? onEditTap;
   final IconData editIcon;
 
@@ -14,6 +15,7 @@ class ProfileHeader extends StatelessWidget {
     required this.patientId,
     required this.patientName,
     this.imagePath = AppAssets.dummyProfile,
+    this.imageUrl,
     this.onEditTap,
     this.editIcon = Icons.edit,
   });
@@ -92,7 +94,9 @@ class ProfileHeader extends StatelessWidget {
                         width: 4,
                       ),
                       image: DecorationImage(
-                        image: AssetImage(imagePath),
+                        image: (imageUrl != null && imageUrl!.isNotEmpty)
+                            ? NetworkImage(imageUrl!) as ImageProvider
+                            : AssetImage(imagePath),
                         fit: BoxFit.cover,
                       ),
                     ),

@@ -25,6 +25,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int _selectedTabIndex = 0; // 0: All, 1: Pending/In Review, 2: Done
   int _currentNavIndex = 0;
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +150,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             final doctorId = record.doctor?['id']?.toString() ?? '';
             final doctorName = record.doctor?['name']?.toString() ?? 'Dokter';
 
+            // Filter by search query
+            if (_searchQuery.isNotEmpty) {
+              final query = _searchQuery.toLowerCase();
+              final doctorNameMatch = doctorName.toLowerCase().contains(query);
+              final idMatch = recordId.toLowerCase().contains(query);
+              final resultMatch = (record.resultLabel ?? '').toLowerCase().contains(query);
+              if (!doctorNameMatch && !idMatch && !resultMatch) {
+                return const SizedBox.shrink();
+              }
+            }
+
             return ScanCard(
               scanId: recordId,
               status: scanStatus,
@@ -207,8 +219,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ),
 
-            const CustomSearchBar(
-              hintText: 'Search Scan History...',
+            CustomSearchBar(
+              hintText: 'Search',
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
             ),
 
             Padding(

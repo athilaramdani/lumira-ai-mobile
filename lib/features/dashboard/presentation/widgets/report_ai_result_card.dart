@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
-import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 
 class ReportAiResultCard extends StatelessWidget {
   final String imagePath;
   final String confidenceScore;
   final String aiResult;
-  final String biRadsTitle;
-  final String biRadsDescription;
 
   const ReportAiResultCard({
     super.key,
     required this.imagePath,
     required this.confidenceScore,
     required this.aiResult,
-    required this.biRadsTitle,
-    required this.biRadsDescription,
   });
 
   @override
@@ -164,46 +159,6 @@ class ReportAiResultCard extends StatelessWidget {
                     color: AppColors.textPrimary,
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            biRadsTitle,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Icon(
-                            Icons.info_outline,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        biRadsDescription,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],
