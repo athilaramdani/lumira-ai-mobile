@@ -4,6 +4,8 @@ import '../../data/auth_service.dart';
 import '../../data/models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auth_usecases.dart';
+import '../../../../core/services/firebase_service.dart';
+import '../../../../core/network/api_client.dart';
 
 /// Provider untuk AuthRepository
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -69,7 +71,10 @@ class AuthController extends StateNotifier<AuthState> {
     final token = prefs.getString('auth_token');
     if (token != null) {
       state = state.copyWith(token: token);
-      fetchMe(); // fetch user data if already logged in
+      fetchMe().then((_) {
+        // Register token on fresh app start if already logged in
+        FirebaseService.registerDeviceToken(ApiClient().dio);
+      });
     }
   }
 
@@ -90,6 +95,9 @@ class AuthController extends StateNotifier<AuthState> {
         // Fetch user details after login, BEFORE triggering success state
         // This ensures that user role is available for navigation routing
         await fetchMe(); 
+
+        // Register FCM Token for push notifications
+        await FirebaseService.registerDeviceToken(ApiClient().dio);
 
         state = state.copyWith(
           isLoading: false, 
@@ -134,6 +142,8 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
     try {
+      // Remove FCM Token before logging out from backend
+      await FirebaseService.removeDeviceToken(ApiClient().dio);
       await _logoutUseCase();
     } finally {
       final prefs = await SharedPreferences.getInstance();
