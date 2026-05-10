@@ -43,6 +43,7 @@ class ProfileView extends ConsumerWidget {
         ProfileHeader(
           patientId: id,
           patientName: name,
+          imageUrl: user?.imageUrl,
           onEditTap: () {
             Navigator.push(
               context,
