@@ -5,8 +5,8 @@ class GetPatientsUseCase {
   final PatientsRepository repository;
   GetPatientsUseCase(this.repository);
 
-  Future<List<PatientModel>> call() async {
-    return await repository.getPatients();
+  Future<List<PatientModel>> call({int page = 1, int limit = 100}) async {
+    return await repository.getPatients(page: page, limit: limit);
   }
 }
 
