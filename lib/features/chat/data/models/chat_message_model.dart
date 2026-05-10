@@ -21,9 +21,9 @@ class ChatMessageModel {
     return ChatMessageModel(
       id: doc.id,
       senderId: data['sender_id']?.toString() ?? '',
-      senderRole: data['sender_role'] ?? 'patient',
+      senderRole: data['sender_type'] ?? data['sender_role'] ?? 'patient',
       message: data['message'] ?? '',
-      sentAt: (data['sent_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      sentAt: (data['created_at'] as Timestamp?)?.toDate() ?? (data['sent_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
@@ -42,9 +42,9 @@ class ChatMessageModel {
     return ChatMessageModel(
       id: json['id']?.toString() ?? '',
       senderId: json['sender_id']?.toString() ?? '',
-      senderRole: json['sender_role'] ?? 'patient',
+      senderRole: json['sender_type'] ?? json['sender_role'] ?? 'patient',
       message: json['message'] ?? '',
-      sentAt: json['sent_at'] != null ? DateTime.parse(json['sent_at']) : DateTime.now(),
+      sentAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : (json['sent_at'] != null ? DateTime.parse(json['sent_at']) : DateTime.now()),
     );
   }
 
