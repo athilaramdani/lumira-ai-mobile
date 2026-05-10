@@ -39,20 +39,18 @@ class ClinicalReportPage extends StatelessWidget {
                 patientName: 'BOBBY ROJUSIAN',
                 patientId: '#USG-99275-Z',
                 scanDate: 'Oct 14, 2025',
-                verifiedBy: 'Dr. Bachtiar',
+                verifiedBy: 'Dr. John',
               ),
               SizedBox(height: 24),
               ReportAiResultCard(
                 imagePath: AppAssets.medicalScanModel, // Using available asset
                 confidenceScore: '98.4%',
                 aiResult: 'Benign',
-                biRadsTitle: 'BI-RADS 2',
-                biRadsDescription: 'Characteristic of non-malignant tissue with zero findings of suspicious calcification.',
               ),
               SizedBox(height: 16),
               ReportDoctorNoteCard(
                 noteText: 'Finding is stable and characteristic of non-malignant tissue. Agree with AI Diagnosis. No immediate follow-up required beyond routine screening.',
-                doctorName: 'Bachtiar',
+                doctorName: 'Dr. John',
                 doctorRole: 'Senior Radiologist',
               ),
               SizedBox(height: 40),

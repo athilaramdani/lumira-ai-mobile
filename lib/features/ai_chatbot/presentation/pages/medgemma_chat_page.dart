@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/datasources/consultation_service.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_model.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/controllers/medgemma_history_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Message model lokal
@@ -24,17 +26,18 @@ class MedgemmaMessage {
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-class MedgemmaChatPage extends StatefulWidget {
+class MedgemmaChatPage extends ConsumerStatefulWidget {
   /// Jika dibuka dari halaman scan, image URL bisa langsung dioper
   final String? initialImageUrl;
+  final String? sessionId;
 
-  const MedgemmaChatPage({super.key, this.initialImageUrl});
+  const MedgemmaChatPage({super.key, this.initialImageUrl, this.sessionId});
 
   @override
-  State<MedgemmaChatPage> createState() => _MedgemmaChatPageState();
+  ConsumerState<MedgemmaChatPage> createState() => _MedgemmaChatPageState();
 }
 
-class _MedgemmaChatPageState extends State<MedgemmaChatPage>
+class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _imageUrlController = TextEditingController();
@@ -56,6 +59,8 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
   /// Image URL aktif (dari parameter awal atau input manual)
   String? _activeImageUrl;
 
+  late String _currentSessionId;
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +74,17 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
         widget.initialImageUrl!.isNotEmpty) {
       _activeImageUrl = widget.initialImageUrl;
       _imageUrlController.text = widget.initialImageUrl!;
+    }
+
+    if (widget.sessionId != null) {
+      _currentSessionId = widget.sessionId!;
+      final session = ref.read(medgemmaHistoryProvider.notifier).getSession(_currentSessionId);
+      if (session != null) {
+        _messages.addAll(session.messages);
+        _apiHistory.addAll(session.apiHistory);
+      }
+    } else {
+      _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
     }
   }
 
@@ -108,6 +124,7 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
       _showImageInput = false;
     });
     _scrollToBottom();
+    _saveSession();
 
     // Simpan ke riwayat API (untuk dikirim sebagai chat_history pada request berikutnya)
     // Catatan: pesan yang BARU saja diketik tidak dimasukkan ke chat_history –
@@ -136,6 +153,7 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
           ));
         });
         _scrollToBottom();
+        _saveSession();
       }
     } catch (e) {
       // Masukkan pesan user ke history meski gagal agar konteks tidak hilang
@@ -151,8 +169,25 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
           ));
         });
         _scrollToBottom();
+        _saveSession();
       }
     }
+  }
+
+  void _saveSession() {
+    if (_messages.isEmpty) return;
+    final title = _messages.first.text;
+    final snippet = _messages.last.text;
+
+    final session = MedgemmaChatSession(
+      id: _currentSessionId,
+      title: title,
+      snippet: snippet,
+      messages: List.from(_messages),
+      apiHistory: List.from(_apiHistory),
+      lastUpdated: DateTime.now(),
+    );
+    ref.read(medgemmaHistoryProvider.notifier).addOrUpdateSession(session);
   }
 
   // -------------------------------------------------------------------------

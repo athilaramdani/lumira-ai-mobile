@@ -8,6 +8,7 @@ class UserModel {
   final String? address;
   final String? city;
   final String? postalCode;
+  final String? imageUrl;
 
   UserModel({
     this.id,
@@ -19,7 +20,34 @@ class UserModel {
     this.address,
     this.city,
     this.postalCode,
+    this.imageUrl,
   });
+
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? role,
+    String? phone,
+    String? dateOfBirth,
+    String? address,
+    String? city,
+    String? postalCode,
+    String? imageUrl,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      phone: phone ?? this.phone,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      address: address ?? this.address,
+      city: city ?? this.city,
+      postalCode: postalCode ?? this.postalCode,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -32,6 +60,7 @@ class UserModel {
       address: json['address'],
       city: json['city'],
       postalCode: json['postal_code'] ?? json['postalCode'],
+      imageUrl: json['image_url'] ?? json['imageUrl'] ?? json['image'],
     );
   }
 
@@ -46,6 +75,7 @@ class UserModel {
       if (address != null) 'address': address,
       if (city != null) 'city': city,
       if (postalCode != null) 'postal_code': postalCode,
+      if (imageUrl != null) 'image_url': imageUrl,
     };
   }
 }
