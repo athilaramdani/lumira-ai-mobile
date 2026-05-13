@@ -3,12 +3,12 @@ import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_mo
 
 /// Service untuk berkomunikasi dengan AI consultation endpoint.
 /// 
-/// Endpoint  : POST https://lewis-facility-chassis-gsm.trycloudflare.com/consultations
+/// Endpoint  : POST https://yields-correction-valid-actively.trycloudflare.com/consultations
 /// Auth      : Bearer XiueX_Lumira+MedWTelU  (static key – bukan token user)
 /// Body      : { user, user_prompt, chat_history, image? }
 class ConsultationService {
   static const String _baseUrl =
-      'https://lewis-facility-chassis-gsm.trycloudflare.com';
+      'https://yields-correction-valid-actively.trycloudflare.com';
   static const String _apiToken = 'XiueX_Lumira+MedWTelU';
   static const String _endpoint = '/consultations';
 

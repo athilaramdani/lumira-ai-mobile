@@ -291,7 +291,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Widget _buildInputArea(String myId) {
     return Container(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -302,7 +301,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
         ],
       ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 8),
+          child: Row(
         children: [
           Expanded(
             child: Container(
@@ -337,6 +342,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

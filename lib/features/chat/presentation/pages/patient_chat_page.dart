@@ -399,9 +399,14 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
     final isDisabled = _isLoadingPatient;
 
     return Container(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 8),
       color: Colors.white,
-      child: Row(
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 8),
+          child: Row(
         children: [
           Expanded(
             child: Container(
@@ -442,6 +447,8 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }
