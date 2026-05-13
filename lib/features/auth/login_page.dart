@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import 'presentation/controllers/auth_controller.dart';
 import '../dashboard/presentation/pages/doctor_dashboard_page.dart';
 import '../dashboard/presentation/pages/dashboard_page.dart';
+import '../../core/widgets/creative_medical_loading.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -406,7 +407,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -415,28 +416,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
           ),
         ],
       ),
-      child: const Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 70,
-            height: 70,
-            child: CircularProgressIndicator(
-              strokeWidth: 6,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.lightBlueAccent), // Matches image
-            ),
-          ),
-          SizedBox(height: 24),
-          Text(
-            'Loading',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800, // Matches image font weight
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
+      child: const CreativeMedicalLoading(text: 'Authenticating...'),
     );
   }
 

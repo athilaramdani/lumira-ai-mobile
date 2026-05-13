@@ -415,153 +415,166 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
   }
 
   Widget _buildMessageBubble(MedgemmaMessage message) {
-    return Align(
-      alignment:
-          message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+    final bubbleContent = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.75,
+      ),
+      decoration: BoxDecoration(
+        color: message.isUser
+            ? const Color(0xFFE5E7EB) // Light gray for User
+            : const Color(0xFFC7E8FF), // Light blue for AI
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: message.isUser ? const Radius.circular(16) : Radius.zero,
+          bottomRight: message.isUser ? Radius.zero : const Radius.circular(16),
         ),
-        decoration: BoxDecoration(
-          color: message.isUser
-              ? const Color(0xFF40B4FF)
-              : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: message.isUser
-                ? const Radius.circular(16)
-                : Radius.zero,
-            bottomRight: message.isUser
-                ? Radius.zero
-                : const Radius.circular(16),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: message.isUser
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            // Tampilkan thumbnail gambar jika ada
-            if (message.imageUrl != null && message.imageUrl!.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  message.imageUrl!,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Row(
-                    children: [
-                      Icon(Icons.broken_image, color: Colors.white54, size: 20),
-                      SizedBox(width: 4),
-                      Text(
-                        'Gambar tidak dapat dimuat',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
-                  ),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (message.imageUrl != null && message.imageUrl!.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                message.imageUrl!,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Row(
+                  children: [
+                    Icon(Icons.broken_image, color: Colors.black54, size: 20),
+                    SizedBox(width: 4),
+                    Text(
+                      'Gambar tidak dapat dimuat',
+                      style: TextStyle(color: Colors.black87, fontSize: 11),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-            ],
-            Text(
-              message.text,
-              style: TextStyle(
-                color:
-                    message.isUser ? Colors.white : Colors.black87,
-                fontSize: 14,
-                height: 1.4,
-              ),
             ),
-            const SizedBox(height: 6),
-            if (message.time.isNotEmpty)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!message.isUser)
-                    Text(
-                      message.time,
-                      style: TextStyle(
-                          color: Colors.grey[400], fontSize: 10),
-                    ),
-                  if (message.isUser)
-                    const Icon(Icons.done_all,
-                        color: Colors.white, size: 14),
-                ],
-              ),
+            const SizedBox(height: 8),
           ],
-        ),
+          Text(
+            message.text,
+            style: const TextStyle(
+              color: Colors.black87, // Black text for both
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          if (message.time.isNotEmpty)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  message.time,
+                  style: const TextStyle(color: Colors.black54, fontSize: 10),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!message.isUser) ...[
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F2FE),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFBAE6FD)),
+              ),
+              child: const Icon(Icons.smart_toy_outlined,
+                  size: 16, color: Color(0xFF0284C7)),
+            ),
+          ],
+          Flexible(child: bubbleContent),
+          if (message.isUser) ...[
+            const SizedBox(width: 8), // Provide some spacing from right edge if needed
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildTypingIndicator() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(16),
-            bottomLeft: Radius.zero,
-            bottomRight: Radius.circular(16),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE0F2FE),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFBAE6FD)),
+            ),
+            child: const Icon(Icons.smart_toy_outlined,
+                size: 16, color: Color(0xFF0284C7)),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '••• ANALYZING CLINICAL CONTEXT...',
-              style: TextStyle(
-                color: Color(0xFF0EA5E9),
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              decoration: const BoxDecoration(
+                color: Color(0xFFC7E8FF),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.zero,
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '••• ANALYZING CLINICAL CONTEXT...',
+                    style: TextStyle(
+                      color: Color(0xFF0284C7),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: AnimatedBuilder(
+                      animation: _progressController,
+                      builder: (context, child) {
+                        return LinearProgressIndicator(
+                          value: _progressController.value,
+                          minHeight: 8,
+                          backgroundColor: Colors.white54,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF0284C7)),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: AnimatedBuilder(
-                animation: _progressController,
-                builder: (context, child) {
-                  return LinearProgressIndicator(
-                    value: _progressController.value,
-                    minHeight: 8,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF40B4FF)),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -569,9 +582,13 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
   Widget _buildBottomInputArea() {
     return Container(
       color: Colors.white,
-      padding:
-          const EdgeInsets.only(bottom: 24, top: 12, left: 16, right: 16),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 12, top: 12, left: 16, right: 16),
+          child: Row(
         children: [
           // Tombol lampirkan gambar
           IconButton(
@@ -632,6 +649,8 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }
