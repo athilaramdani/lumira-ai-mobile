@@ -45,16 +45,7 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
       backgroundColor: Colors.white,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _isLoading
-              ? const Padding(
-                  key: ValueKey('loading'),
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CreativeMedicalLoading(text: 'Logging out...'),
-                )
-              : _buildDialogContent(),
-        ),
+        child: _buildDialogContent(),
       ),
     );
   }
@@ -113,9 +104,10 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _handleLogout,
+            onPressed: _isLoading ? null : _handleLogout,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD30000), // Solid red
+              disabledBackgroundColor: const Color(0xFFD30000).withOpacity(0.5),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -123,20 +115,29 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Keluar',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    'Keluar',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: _isLoading ? null : () {
               Navigator.of(context).pop(); // Close the dialog
             },
             style: ElevatedButton.styleFrom(

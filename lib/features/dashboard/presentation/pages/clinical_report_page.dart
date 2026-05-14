@@ -6,7 +6,28 @@ import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/report_
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/report_doctor_note_card.dart';
 
 class ClinicalReportPage extends StatelessWidget {
-  const ClinicalReportPage({super.key});
+  final String patientName;
+  final String patientId;
+  final String scanDate;
+  final String verifiedBy;
+  final String imagePath;
+  final String confidenceScore;
+  final String aiResult;
+  final String noteText;
+  final String doctorRole;
+
+  const ClinicalReportPage({
+    super.key,
+    required this.patientName,
+    required this.patientId,
+    required this.scanDate,
+    required this.verifiedBy,
+    required this.imagePath,
+    required this.confidenceScore,
+    required this.aiResult,
+    required this.noteText,
+    this.doctorRole = 'Radiologist',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,26 +55,26 @@ class ClinicalReportPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: const [
+            children: [
               ReportPatientHeader(
-                patientName: 'BOBBY ROJUSIAN',
-                patientId: '#USG-99275-Z',
-                scanDate: 'Oct 14, 2025',
-                verifiedBy: 'Dr. John',
+                patientName: patientName,
+                patientId: patientId,
+                scanDate: scanDate,
+                verifiedBy: verifiedBy,
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               ReportAiResultCard(
-                imagePath: AppAssets.medicalScanModel, // Using available asset
-                confidenceScore: '98.4%',
-                aiResult: 'Benign',
+                imagePath: imagePath,
+                confidenceScore: confidenceScore,
+                aiResult: aiResult,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               ReportDoctorNoteCard(
-                noteText: 'Finding is stable and characteristic of non-malignant tissue. Agree with AI Diagnosis. No immediate follow-up required beyond routine screening.',
-                doctorName: 'Dr. John',
-                doctorRole: 'Senior Radiologist',
+                noteText: noteText,
+                doctorName: verifiedBy,
+                doctorRole: doctorRole,
               ),
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
             ],
           ),
         ),

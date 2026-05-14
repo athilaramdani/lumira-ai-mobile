@@ -152,12 +152,6 @@ class ConsultAiView extends ConsumerWidget {
                   icon: Icons.receipt_long,
                   title: 'Result\nInterpretation',
                   description: 'Decode complex medical reports with clarity',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AiResultInterpretationPage()),
-                    );
-                  },
                 ),
               ),
               const SizedBox(width: 16),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
+import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
+import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/annotation_popup.dart';
 
 class ReportAiResultCard extends StatelessWidget {
   final String imagePath;
@@ -15,6 +17,8 @@ class ReportAiResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isNetworkImage = imagePath.startsWith('http');
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -33,16 +37,31 @@ class ReportAiResultCard extends StatelessWidget {
           // Image Section
           Stack(
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                child: Image.asset(
-                  imagePath,
-                  height: 220,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () => _showImageViewer(context),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  child: isNetworkImage
+                      ? Image.network(
+                          imagePath,
+                          height: 220,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 220,
+                            color: Colors.grey.shade100,
+                            child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                          ),
+                        )
+                      : Image.asset(
+                          imagePath,
+                          height: 220,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
               Positioned(
@@ -62,35 +81,6 @@ class ReportAiResultCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.fullscreen,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-              // Dummy green ellipse to mimic the screenshot
-              Positioned(
-                bottom: 30,
-                right: 60,
-                child: Container(
-                  width: 90,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.green, width: 3),
-                    borderRadius: BorderRadius.circular(45), // Oval shape
                   ),
                 ),
               ),
@@ -165,6 +155,22 @@ class ReportAiResultCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showImageViewer(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AnnotationPopup(
+        imagePath: imagePath,
+        isNetwork: imagePath.startsWith('http'),
+        isReadOnly: true,
+        initialStrokes: const [],
+        onSave: (_) {},
+        onSaveAndNavigate: (_) {},
       ),
     );
   }
