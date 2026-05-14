@@ -59,14 +59,28 @@ final dashboardFilterProvider = StateProvider<String>((ref) => 'all');
 
 class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
   String _searchQuery = '';
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(patientsControllerProvider.notifier).fetchPatients();
       ref.read(statisticsControllerProvider.notifier).fetchDoctorStats();
     });
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      ref.read(patientsControllerProvider.notifier).fetchPatients(loadMore: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   List<PatientData> get _allMappedPatients {
@@ -167,6 +181,7 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
             if (currentIndex == 0) DoctorHeader(doctorName: doctorName),
             Expanded(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 child: currentIndex == 1
                     ? const ProfileView()
                     : Column(
@@ -195,7 +210,13 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
                           ),
                           const SizedBox(height: 10),
                           _buildPatientList(),
-                          const SizedBox(height: 20),
+                          if (ref.watch(patientsControllerProvider).isLoadingMore)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          else
+                            const SizedBox(height: 20),
                         ],
                       ),
               ),
@@ -216,11 +237,26 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
 
   Widget _buildStatCards() {
     final currentFilter = ref.watch(dashboardFilterProvider);
-    final mapped = _allMappedPatients;
-    final waitingCount = mapped.where((p) => p.filterCategory == 'waiting').length;
-    final doneCount = mapped.where((p) => p.filterCategory == 'done').length;
-    final totalImages = mapped.length;
-    final needAttention = mapped.where((p) => p.aiResult == AIResult.unknown).length;
+    final statisticsState = ref.watch(statisticsControllerProvider);
+    final doctorStats = statisticsState.doctorStats;
+
+    int waitingCount = 0;
+    int doneCount = 0;
+    int totalImages = 0;
+    int needAttention = 0;
+
+    if (doctorStats != null) {
+      waitingCount = doctorStats['pending'] as int? ?? 0;
+      doneCount = doctorStats['completed'] as int? ?? 0;
+      totalImages = doctorStats['total'] as int? ?? 0;
+      needAttention = doctorStats['attention'] as int? ?? 0;
+    } else {
+      final mapped = _allMappedPatients;
+      waitingCount = mapped.where((p) => p.filterCategory == 'waiting').length;
+      doneCount = mapped.where((p) => p.filterCategory == 'done').length;
+      totalImages = mapped.length;
+      needAttention = mapped.where((p) => p.aiResult == AIResult.unknown).length;
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),

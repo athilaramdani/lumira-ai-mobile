@@ -4,8 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/widgets/custom_search_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../patients/presentation/controllers/patients_controller.dart';
-import '../../../patients/data/models/patient_model.dart';
+import '../controllers/chat_controller.dart';
 import 'patient_chat_page.dart';
 
 class ChatListPage extends ConsumerStatefulWidget {
@@ -19,34 +18,9 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
   String _searchQuery = '';
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(patientsControllerProvider.notifier).fetchPatients();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final patientsState = ref.watch(patientsControllerProvider);
-
-    final filteredPatients = patientsState.patients.where((patient) {
-      if (_searchQuery.isEmpty) return true;
-      final query = _searchQuery.toLowerCase();
-      final name = patient.name?.toLowerCase() ?? '';
-      final id = patient.id?.toLowerCase() ?? '';
-      return name.contains(query) || id.contains(query);
-    }).toList();
-
-    // Inject "Test Patient" at the top of the list
-    if (!filteredPatients.any((p) => p.id == 'PAS-859317')) {
-      final testPatient = PatientModel(id: 'PAS-859317', name: 'Test Patient');
-      if (_searchQuery.isEmpty || 
-          testPatient.name!.toLowerCase().contains(_searchQuery.toLowerCase()) || 
-          testPatient.id!.toLowerCase().contains(_searchQuery.toLowerCase())) {
-        filteredPatients.insert(0, testPatient);
-      }
-    }
+    // Use /chat/rooms API — same endpoint as the web, sorted by backend
+    final chatRoomsAsync = ref.watch(chatRoomsProvider);
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -80,24 +54,42 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
               },
             ),
             Expanded(
-              child: patientsState.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : filteredPatients.isEmpty
-                      ? const Center(child: Text('Tidak ada pasien ditemukan.'))
-                      : ListView.builder(
-                          itemCount: filteredPatients.length,
-                          itemBuilder: (context, index) {
-                            final patient = filteredPatients[index];
-                            return _buildChatListItem(
-                              context,
-                              name: patient.name ?? 'Unknown',
-                              id: patient.id ?? '-',
-                              message: 'Ketuk untuk mulai chat',
-                              time: '',
-                              isOnline: true,
-                            );
-                          },
-                        ),
+              child: chatRoomsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Center(child: Text('Gagal memuat chat: $err')),
+                data: (rooms) {
+                  final filtered = rooms.where((room) {
+                    if (_searchQuery.isEmpty) return true;
+                    final query = _searchQuery.toLowerCase();
+                    final name = (room['counterpartName'] ?? '').toString().toLowerCase();
+                    final id = (room['counterpartId'] ?? '').toString().toLowerCase();
+                    return name.contains(query) || id.contains(query);
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(child: Text('Tidak ada pasien ditemukan.'));
+                  }
+
+                  return ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final room = filtered[index];
+                      final patientName = room['counterpartName'] ?? 'Unknown';
+                      final patientId = room['patientId'] ?? '';
+                      final medicalRecordId = room['medicalRecordId'] ?? '';
+                      final lastMessage = room['lastMessage'] as String?;
+
+                      return _buildChatListItem(
+                        context,
+                        name: patientName,
+                        id: patientId,
+                        medicalRecordId: medicalRecordId,
+                        message: lastMessage ?? 'Ketuk untuk mulai chat',
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -109,9 +101,8 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
     BuildContext context, {
     required String name,
     required String id,
+    required String medicalRecordId,
     required String message,
-    required String time,
-    required bool isOnline,
   }) {
     return Material(
       color: Colors.transparent,
@@ -123,6 +114,7 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
               builder: (context) => PatientChatPage(
                 patientName: name,
                 patientId: id,
+                medicalRecordId: medicalRecordId,
               ),
             ),
           );
@@ -134,35 +126,17 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
           ),
           child: Row(
             children: [
-              Stack(
-                children: [
-                  Container(
-                    width: 55,
-                    height: 55,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.blue.shade100, width: 2),
-                      image: const DecorationImage(
-                        image: AssetImage(AppAssets.doctorProfile),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+              Container(
+                width: 55,
+                height: 55,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.blue.shade100, width: 2),
+                  image: const DecorationImage(
+                    image: AssetImage(AppAssets.doctorProfile),
+                    fit: BoxFit.cover,
                   ),
-                  if (isOnline)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
               const SizedBox(width: 15),
               Expanded(
@@ -170,26 +144,22 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Text(
                           'ID: $id',
                           style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                         ),
-                        const Spacer(),
-                        if (time.isNotEmpty)
-                          Text(
-                            time,
-                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                          ),
                       ],
                     ),
                     const SizedBox(height: 5),

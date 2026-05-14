@@ -15,11 +15,13 @@ import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma
 class PatientChatPage extends ConsumerStatefulWidget {
   final String patientName;
   final String patientId;
+  final String? medicalRecordId;
 
   const PatientChatPage({
     super.key,
     required this.patientName,
     required this.patientId,
+    this.medicalRecordId,
   });
 
   @override
@@ -36,7 +38,13 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
   @override
   void initState() {
     super.initState();
-    _checkMedicalRecord();
+    if (widget.medicalRecordId != null && widget.medicalRecordId!.isNotEmpty) {
+      _medicalRecordId = widget.medicalRecordId!;
+      _isLoadingPatient = false;
+      _hasMedicalRecord = true;
+    } else {
+      _checkMedicalRecord();
+    }
   }
 
   Future<void> _checkMedicalRecord() async {
