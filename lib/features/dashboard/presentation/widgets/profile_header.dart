@@ -89,16 +89,25 @@ class ProfileHeader extends StatelessWidget {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      color: const Color(0xFFE3F2FD), // Light blue background like primaryLight
                       border: Border.all(
                         color: Colors.white,
                         width: 4,
                       ),
-                      image: DecorationImage(
-                        image: (imageUrl != null && imageUrl!.isNotEmpty)
-                            ? NetworkImage(imageUrl!) as ImageProvider
-                            : AssetImage(imagePath),
-                        fit: BoxFit.cover,
-                      ),
+                    ),
+                    child: ClipOval(
+                      child: (imageUrl != null && imageUrl!.isNotEmpty)
+                          ? Image.network(
+                              imageUrl!,
+                              fit: BoxFit.cover,
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.asset(
+                                imagePath,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
                     ),
                   ),
                   GestureDetector(

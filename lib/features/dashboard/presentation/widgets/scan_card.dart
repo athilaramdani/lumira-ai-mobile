@@ -16,6 +16,9 @@ class ScanCard extends StatelessWidget {
   final String? verifiedTime;
   final String? result;
   final bool isPatientView;
+  final String? imagePath;
+  final String? confidenceScore;
+  final String? noteText;
 
   const ScanCard({
     super.key,
@@ -30,6 +33,9 @@ class ScanCard extends StatelessWidget {
     this.verifiedTime,
     this.result,
     this.isPatientView = false,
+    this.imagePath,
+    this.confidenceScore,
+    this.noteText,
   });
 
   Color _getAIResultColor(String? resultText) {
@@ -160,11 +166,16 @@ class ScanCard extends StatelessWidget {
                                 height: 24,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.white,
+                                  color: const Color(0xFFE3F2FD),
                                   border: Border.all(color: Colors.blue.shade100, width: 1),
-                                  image: const DecorationImage(
-                                    image: AssetImage(AppAssets.doctorProfile),
-                                    fit: BoxFit.cover,
+                                ),
+                                child: ClipOval(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2.0),
+                                    child: Image.asset(
+                                      AppAssets.doctorProfile,
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -285,7 +296,16 @@ class ScanCard extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ClinicalReportPage(),
+                          builder: (context) => ClinicalReportPage(
+                            patientName: patientName ?? 'Patient',
+                            patientId: scanId,
+                            scanDate: parsedDate,
+                            verifiedBy: doctorName ?? 'Doctor',
+                            imagePath: imagePath ?? AppAssets.medicalScanModel,
+                            confidenceScore: confidenceScore ?? '-',
+                            aiResult: result ?? 'Unknown',
+                            noteText: noteText ?? 'No notes provided.',
+                          ),
                         ),
                       );
                     },
