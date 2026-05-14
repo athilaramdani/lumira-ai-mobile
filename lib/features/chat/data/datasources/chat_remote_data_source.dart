@@ -153,7 +153,11 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       }
       return response.data as List<dynamic>;
     } catch (e) {
-      print('Error getting rooms: $e');
+      debugPrint('Error getting rooms: $e');
+      if (e is DioException) {
+        final msg = e.response?.data?['message'] ?? e.message;
+        throw Exception('Gagal mendapatkan daftar chat: $msg');
+      }
       throw Exception('Gagal mendapatkan daftar chat');
     }
   }

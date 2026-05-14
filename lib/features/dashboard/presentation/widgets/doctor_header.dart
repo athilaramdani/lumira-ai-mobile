@@ -57,8 +57,11 @@ class DoctorHeader extends StatelessWidget {
             ),
             child: CircleAvatar(
               radius: 22,
-              backgroundColor: Colors.white,
-              backgroundImage: const AssetImage(AppAssets.doctorProfile),
+              backgroundColor: const Color(0xFFE3F2FD),
+              child: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: Image.asset(AppAssets.doctorProfile, fit: BoxFit.contain),
+              ),
             ),
           ),
         ],

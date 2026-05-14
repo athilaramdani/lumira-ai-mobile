@@ -39,6 +39,8 @@ class HistoryView extends ConsumerWidget {
                   doctorId: record.doctor != null ? record.doctor!['id']?.toString() ?? '' : '',
                   doctorName: record.doctor != null ? record.doctor!['name']?.toString() ?? 'Dokter' : 'Dokter',
                   medicalRecordId: record.id?.toString() ?? '',
+                  record: record,
+                  patient: patient,
                 );
               }).whereType<Widget>().toList();
 
@@ -107,6 +109,8 @@ class HistoryView extends ConsumerWidget {
     required String doctorId,
     required String doctorName,
     required String medicalRecordId,
+    required dynamic record,
+    required dynamic patient,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -206,9 +210,38 @@ class HistoryView extends ConsumerWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
+                // Normalize AI result label and confidence
+                String normalizedLabel = record.resultLabel ?? 'Unknown';
+                String confidenceStr = '-';
+
+                // If the label looks like a JSON or has underscores, clean it up
+                normalizedLabel = normalizedLabel
+                    .replaceAll('_', ' ')
+                    .split(' ')
+                    .map((s) => s.isEmpty ? '' : s[0].toUpperCase() + s.substring(1))
+                    .join(' ');
+                
+                if (record.resultConfidence != null) {
+                  final confVal = record.resultConfidence!;
+                  final pct = confVal > 1 ? confVal : confVal * 100;
+                  confidenceStr = '${pct.toStringAsFixed(2)}%';
+                }
+
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ClinicalReportPage()),
+                  MaterialPageRoute(
+                    builder: (context) => ClinicalReportPage(
+                      patientName: patient?.name ?? 'Patient',
+                      patientId: patient?.id ?? id,
+                      scanDate: date,
+                      verifiedBy: doctorName,
+                      imagePath: record.gradcamImageUrl ?? record.imageUrl ?? AppAssets.medicalScanModel,
+                      confidenceScore: confidenceStr,
+                      aiResult: normalizedLabel,
+                      noteText: record.doctorNotes ?? 'No notes provided.',
+                      doctorRole: 'Senior Radiologist',
+                    ),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
+import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_header.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_section_card.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_info_row.dart';
@@ -51,6 +52,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
           patientId: id,
           patientName: name,
           imageUrl: user?.imageUrl,
+          imagePath: user?.role == 'doctor' ? AppAssets.doctorProfile : AppAssets.patientProfile,
           onEditTap: () {
             Navigator.push(
               context,

@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
@@ -18,6 +21,9 @@ import '../../../auth/presentation/controllers/auth_controller.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/patient_card.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/doctor_dashboard_page.dart';
 import 'package:lumira_ai_mobile/features/medical_records/presentation/controllers/medical_records_controller.dart';
+import 'package:lumira_ai_mobile/features/patients/presentation/controllers/patients_controller.dart';
+import 'package:lumira_ai_mobile/features/chat/presentation/controllers/chat_controller.dart';
+import 'package:lumira_ai_mobile/features/statistics/presentation/controllers/statistics_controller.dart';
 
 class MedicalReviewPage extends ConsumerStatefulWidget {
   final String patientId;
@@ -156,6 +162,41 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
       case AIResult.unknown:
       default:
         return ClassificationStatus.normal;
+    }
+  }
+
+  /// Converts the drawing strokes into a PNG file to be sent to the server.
+  /// Matches the 400x400 canvas size used in the web version.
+  Future<File?> _captureDrawingAsFile() async {
+    if (_strokes.isEmpty) return null;
+
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, 400, 400));
+      
+      // Draw a transparent background (or match FE background if needed)
+      // The FE draws over the base image, but sends only the brush layer.
+      
+      final painter = DrawingPainter(strokes: _strokes, currentStroke: null);
+      painter.paint(canvas, const Size(400, 400));
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(400, 400);
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      
+      if (byteData == null) return null;
+
+      final bytes = byteData.buffer.asUint8List();
+      
+      // Save to temporary directory
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/doctor_brush_${DateTime.now().millisecondsSinceEpoch}.png');
+      await file.writeAsBytes(bytes);
+      
+      return file;
+    } catch (e) {
+      debugPrint('Error capturing drawing: $e');
+      return null;
     }
   }
 
@@ -316,10 +357,13 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                 
                 final agreement = _doctorAgree == true ? 'agree' : 'disagree';
                 final diagnosisLabel = _selectedClassification == ClassificationStatus.benign
-                    ? 'Benign'
+                    ? 'benign'
                     : (_selectedClassification == ClassificationStatus.malignant
-                        ? 'Malignant'
-                        : 'Normal');
+                        ? 'malignant'
+                        : 'normal');
+                
+                // Capture the doctor's drawing/brush as a file
+                final doctorBrushFile = await _captureDrawingAsFile();
                 
                 // Use PATCH if editing existing (Done), POST if new review
                 final bool success;
@@ -329,6 +373,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                     agreement: agreement,
                     note: _doctorNote,
                     doctorDiagnosis: diagnosisLabel,
+                    doctorBrushPath: doctorBrushFile,
                   );
                 } else {
                   success = await ref.read(medicalRecordsControllerProvider.notifier).reviewMedicalRecord(
@@ -336,6 +381,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                     agreement: agreement,
                     note: _doctorNote,
                     doctorDiagnosis: diagnosisLabel,
+                    doctorBrushPath: doctorBrushFile,
                   );
                 }
                 
@@ -343,9 +389,13 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                 Navigator.pop(context); // hide loading
                 
                 if (success) {
-                  setState(() {
-                    _isSubmitted = true;
-                  });
+                  // Invalidate/Refresh providers to force reload
+                  ref.invalidate(patientsControllerProvider);
+                  ref.refresh(chatRoomsProvider);
+                  ref.refresh(statisticsControllerProvider);
+
+                  if (!mounted) return;
+                  // Show success snackbar then pop back to dashboard
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Diagnosis submitted successfully!'),
@@ -353,6 +403,10 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                       duration: Duration(seconds: 2),
                     ),
                   );
+                  // Pop back to doctor dashboard root
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  // Re-fetch patients data
+                  ref.read(patientsControllerProvider.notifier).fetchPatients();
                 } else {
                   final error = ref.read(medicalRecordsControllerProvider).error;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -545,7 +599,9 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => AnnotationPopup(
         imagePath: isReadOnly ? (widget.gradCamImage ?? AppAssets.aiGradcam) : (widget.rawImage ?? AppAssets.rawPixels),
+        rawImagePath: widget.rawImage ?? AppAssets.rawPixels,
         isNetwork: isReadOnly ? (widget.gradCamImage != null) : (widget.rawImage != null),
+        isRawNetwork: widget.rawImage != null,
         initialStrokes: _strokes,
         isReadOnly: isReadOnly,
         onSave: (newStrokes) {
