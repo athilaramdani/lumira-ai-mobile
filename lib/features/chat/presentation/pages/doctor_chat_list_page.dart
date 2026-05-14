@@ -7,6 +7,7 @@ import '../../../../core/widgets/custom_search_bar.dart';
 import 'chat_page.dart';
 import '../../../patients/presentation/controllers/patients_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../../core/widgets/creative_medical_loading.dart';
 
 class DoctorChatListPage extends ConsumerStatefulWidget {
   const DoctorChatListPage({super.key});
@@ -88,16 +89,7 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
         }
       }
 
-      // Inject "Dr. John Doe" manually for testing, so the list is never empty!
-      if (!uniqueDoctors.containsKey('DOC-803413')) {
-        uniqueDoctors['DOC-803413'] = {
-          'name': 'Dr. John Doe',
-          'id': 'DOC-803413',
-          'specialty': 'Surgical Oncologist',
-          'isOnline': true,
-          'medicalRecordId': 'MED-793414',
-        };
-      }
+      // Removed dummy data injection to match real backend data.
 
       if (mounted) {
         setState(() {
@@ -154,7 +146,12 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
             ),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40.0),
+                        child: CreativeMedicalLoading(text: 'Loading chat list...'),
+                      ),
+                    )
                   : filteredDoctors.isEmpty
                       ? const Center(child: Text('Belum ada dokter yang menangani Anda.'))
                       : ListView.builder(
@@ -218,10 +215,16 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
                     height: 55,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      color: const Color(0xFFE3F2FD),
                       border: Border.all(color: Colors.blue.shade100, width: 2),
-                      image: const DecorationImage(
-                        image: AssetImage(AppAssets.doctor),
-                        fit: BoxFit.cover,
+                    ),
+                    child: ClipOval(
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Image.asset(
+                          AppAssets.doctorProfile,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   ),

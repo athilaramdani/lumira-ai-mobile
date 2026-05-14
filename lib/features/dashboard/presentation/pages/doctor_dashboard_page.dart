@@ -13,6 +13,7 @@ import '../widgets/doctor_bottom_nav_bar.dart';
 import '../../../chat/presentation/pages/chat_list_page.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../widgets/profile_view.dart';
+import '../../../../core/widgets/creative_medical_loading.dart';
 class PatientData {
   final String name;
   final String id;
@@ -60,6 +61,7 @@ final dashboardFilterProvider = StateProvider<String>((ref) => 'all');
 class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
   String _searchQuery = '';
   final ScrollController _scrollController = ScrollController();
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -72,9 +74,19 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
   }
 
   void _onScroll() {
+    // Load more: near bottom
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       ref.read(patientsControllerProvider.notifier).fetchPatients(loadMore: true);
     }
+  }
+
+  Future<void> _triggerRefresh() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    await ref.read(patientsControllerProvider.notifier).fetchPatients();
+    await ref.read(statisticsControllerProvider.notifier).fetchDoctorStats();
+    ref.invalidate(chatRoomsProvider);
+    if (mounted) setState(() => _isRefreshing = false);
   }
 
   @override
@@ -176,51 +188,72 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
-        child: Column(
+        child: Stack(
+          children: [
+            Column(
           children: [
             if (currentIndex == 0) DoctorHeader(doctorName: doctorName),
             Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: currentIndex == 1
-                    ? const ProfileView()
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
-                            child: Text(
-                              'Hi, ${doctorName.startsWith('Dr') ? doctorName : 'Dr. $doctorName'}!',
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+              child: RefreshIndicator(
+                onRefresh: _triggerRefresh,
+                color: AppColors.primary,
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: currentIndex == 1
+                      ? const ProfileView()
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
+                              child: Text(
+                                'Hi, ${doctorName.startsWith('Dr') ? doctorName : 'Dr. $doctorName'}!',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
                             ),
-                          ),
-                          _buildStatCards(),
-                          const SizedBox(height: 10),
-                          CustomSearchBar(
-                            hintText: 'Search Patient...',
-                            onChanged: (value) {
-                              setState(() {
-                                _searchQuery = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          _buildPatientList(),
-                          if (ref.watch(patientsControllerProvider).isLoadingMore)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Center(child: CircularProgressIndicator()),
-                            )
-                          else
-                            const SizedBox(height: 20),
-                        ],
-                      ),
+                            _buildStatCards(),
+                            const SizedBox(height: 10),
+                            CustomSearchBar(
+                              hintText: 'Search Patient...',
+                              onChanged: (value) {
+                                setState(() {
+                                  _searchQuery = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            _buildPatientList(),
+                            if (ref.watch(patientsControllerProvider).isLoadingMore)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: CreativeMedicalLoading(text: 'Loading more...'),
+                                ),
+                              )
+                            else
+                              const SizedBox(height: 20),
+                          ],
+                        ),
+                ),
               ),
             ),
+          ],
+        ),
+            // ─── Pull-to-refresh overlay ──────────────────────────────────
+            if (_isRefreshing)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.white.withOpacity(0.88),
+                  child: const Center(
+                    child: CreativeMedicalLoading(text: 'Refreshing data...'),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
