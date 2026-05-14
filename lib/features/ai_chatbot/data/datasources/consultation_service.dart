@@ -3,12 +3,12 @@ import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_mo
 
 /// Service untuk berkomunikasi dengan AI consultation endpoint.
 /// 
-/// Endpoint  : POST https://yields-correction-valid-actively.trycloudflare.com/consultations
+/// Endpoint  : POST https://tablet-pending-byte-julian.trycloudflare.com/consultations
 /// Auth      : Bearer XiueX_Lumira+MedWTelU  (static key – bukan token user)
 /// Body      : { user, user_prompt, chat_history, image? }
 class ConsultationService {
   static const String _baseUrl =
-      'https://yields-correction-valid-actively.trycloudflare.com';
+      'https://tablet-pending-byte-julian.trycloudflare.com';
   static const String _apiToken = 'XiueX_Lumira+MedWTelU';
   static const String _endpoint = '/consultations';
 
@@ -90,11 +90,21 @@ class ConsultationService {
             '';
       }
 
+      // ── Bersihkan teks dari proses berpikir AI (thought process) ──
+      // Hapus blok <unused94>thought ... <unused94> atau </unused94> atau jika tidak ditutup (hingga akhir)
+      aiText = aiText.replaceAll(RegExp(r'<unused94>thought[\s\S]*?(?:</unused94>|<unused94>|$)'), '');
+      // Hapus blok <think> ... </think> jika ada
+      aiText = aiText.replaceAll(RegExp(r'<think>[\s\S]*?(?:</think>|$)'), '');
+      // Hapus sisa-sisa spasi berlebih
+      aiText = aiText.trim();
+
       print('[ConsultationService] ✅ Parsed AI text (${aiText.length} chars): '
           '${aiText.length > 80 ? '${aiText.substring(0, 80)}...' : aiText}');
 
       if (aiText.isEmpty) {
-        throw Exception('AI tidak mengembalikan teks. Raw: $rawData');
+        // Jika teks kosong karena seluruh respons adalah proses berpikir yang terpotong,
+        // berikan fallback pesan yang ramah alih-alih melempar Exception.
+        aiText = 'Mohon maaf, pemrosesan jawaban terpotong karena batas sistem. Silakan ajukan pertanyaan yang lebih singkat atau buat sesi obrolan baru.';
       }
 
       return ConsultationResponse(
