@@ -42,7 +42,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         _dio = dio ?? ApiClient().dio;
 
   // ─── Firestore collection paths ───────────────────────────────────────
-  CollectionReference get _rooms => _firestore.collection('chat_rooms');
+  CollectionReference get _rooms => _firestore.collection('rooms');
 
   CollectionReference _messages(String roomId) =>
       _rooms.doc(roomId).collection('messages');
@@ -51,7 +51,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Stream<List<ChatMessageModel>> getMessages(String roomId) {
     return _messages(roomId)
-        .orderBy('sent_at', descending: false)
+        .orderBy('created_at', descending: false)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => ChatMessageModel.fromFirestore(doc))
@@ -66,22 +66,39 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     required String senderRole,
     required String message,
   }) async {
-    final model = ChatMessageModel(
-      id: '', // Firestore will auto-generate ID
-      senderId: senderId,
-      senderRole: senderRole,
-      message: message,
-      sentAt: DateTime.now(),
-    );
+    // 1. Get room data to satisfy security rules (need patient_id, doctor_id)
+    final roomDoc = await _rooms.doc(roomId).get();
+    final roomData = roomDoc.data() as Map<String, dynamic>?;
+    if (roomData == null) {
+      throw Exception('Room metadata not found for $roomId');
+    }
 
-    final docRef = await _messages(roomId).add(model.toFirestore());
+    final patientId = roomData['patient_id'] as String;
+    final doctorId = roomData['doctor_id'] as String;
 
-    // Update room's last_message metadata for chat list preview, using set with merge so it creates the doc if not exists
-    await _rooms.doc(roomId).set({
-      'last_message': message,
-      'last_message_at': Timestamp.fromDate(model.sentAt),
-      'last_sender_role': senderRole,
-    }, SetOptions(merge: true));
+    final docRef = _messages(roomId).doc();
+
+    final expectedSenderType = senderId == patientId ? 'patient' : (senderId == doctorId ? 'doctor' : '');
+    final receiverId = senderId == patientId ? doctorId : patientId;
+
+    // 2. Build exact payload required by rules
+    final payload = {
+      'message_id': docRef.id,
+      'room_id': roomId,
+      'patient_id': patientId,
+      'doctor_id': doctorId,
+      'sender_type': expectedSenderType,
+      'sender_id': senderId,
+      'receiver_id': receiverId,
+      'message': message,
+      'is_read': false,
+      'created_at': FieldValue.serverTimestamp(),
+    };
+
+    // 3. Save message
+    await docRef.set(payload);
+
+    // Note: We DO NOT update _rooms.doc(roomId) here because security rules forbid client writes to room metadata!
 
     // Notify backend
     try {
