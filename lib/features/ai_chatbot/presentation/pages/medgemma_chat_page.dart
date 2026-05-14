@@ -4,6 +4,7 @@ import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/datasources/consultation_service.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_model.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/controllers/medgemma_history_controller.dart';
 
 // ---------------------------------------------------------------------------
@@ -457,12 +458,18 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
             ),
             const SizedBox(height: 8),
           ],
-          Text(
-            message.text,
-            style: const TextStyle(
-              color: Colors.black87, // Black text for both
-              fontSize: 14,
-              height: 1.5,
+          MarkdownBody(
+            data: message.text,
+            styleSheet: MarkdownStyleSheet(
+              p: const TextStyle(
+                color: Colors.black87,
+                fontSize: 14,
+                height: 1.5,
+              ),
+              strong: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
           ),
           const SizedBox(height: 6),
