@@ -22,6 +22,21 @@ class MedgemmaMessage {
     required this.time,
     this.imageUrl,
   });
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'isUser': isUser,
+        'time': time,
+        'imageUrl': imageUrl,
+      };
+
+  factory MedgemmaMessage.fromJson(Map<String, dynamic> json) =>
+      MedgemmaMessage(
+        text: json['text'] as String,
+        isUser: json['isUser'] as bool,
+        time: json['time'] as String,
+        imageUrl: json['imageUrl'] as String?,
+      );
 }
 
 // ---------------------------------------------------------------------------
@@ -62,13 +77,17 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
 
   late String _currentSessionId;
 
+  /// Topik medis utama yang terdeteksi dari percakapan ini.
+  /// Digunakan untuk memperkaya konteks pesan follow-up yang ambigu.
+  String? _detectedMedicalTopic;
+
   @override
   void initState() {
     super.initState();
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
+      duration: const Duration(seconds: 15),
+    );
 
     // Jika ada gambar awal dari halaman scan
     if (widget.initialImageUrl != null &&
@@ -101,6 +120,29 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
   // -------------------------------------------------------------------------
   // Send message
   // -------------------------------------------------------------------------
+  // ── Kata kunci medis yang jika ada → topik terdeteksi ──────────────────
+  static const List<String> _medicalKeywords = [
+    'kanker', 'tumor', 'kista', 'mammogram', 'biopsi', 'radiasi',
+    'kemoterapi', 'onkologi', 'metastasis', 'stadium', 'payudara',
+    'paru', 'hati', 'leher rahim', 'serviks', 'prostat', 'diabetes',
+    'hipertensi', 'jantung', 'stroke', 'tbc', 'anemia', 'asma',
+    'limfoma', 'leukemia', 'fibroid', 'polip',
+  ];
+
+  /// Ekstrak topik medis dari teks. Return null jika tidak ada.
+  String? _extractTopic(String text) {
+    final lower = text.toLowerCase();
+    for (final kw in _medicalKeywords) {
+      if (lower.contains(kw)) return kw;
+    }
+    return null;
+  }
+
+  /// Cek apakah teks mengandung kata kunci medis eksplisit.
+  bool _hasExplicitMedicalContext(String text) {
+    return _extractTopic(text) != null;
+  }
+
   Future<void> _sendMessage() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
@@ -110,7 +152,24 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
         ? _imageUrlController.text.trim()
         : _activeImageUrl;
 
-    // Tambah pesan user ke UI
+    // ── Deteksi & perbarui topik dari pesan user ──
+    final topicInMessage = _extractTopic(text);
+    if (topicInMessage != null) {
+      _detectedMedicalTopic = topicInMessage;
+    }
+
+    // ── Perkaya prompt jika ini pesan follow-up yang ambigu ──
+    // Kondisi: ada riwayat percakapan, tapi pesan sekarang tidak punya
+    // kata kunci medis eksplisit → sisipkan konteks topik sesi.
+    String enrichedPrompt = text;
+    if (_apiHistory.isNotEmpty &&
+        !_hasExplicitMedicalContext(text) &&
+        _detectedMedicalTopic != null) {
+      enrichedPrompt =
+          '[Konteks: pertanyaan ini masih dalam topik $_detectedMedicalTopic] $text';
+    }
+
+    // Tambah pesan user ke UI (tampilkan teks asli, bukan yang sudah diperkaya)
     final userMsg = MedgemmaMessage(
       text: text,
       isUser: true,
@@ -123,6 +182,12 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
       _textController.clear();
       _isAiTyping = true;
       _showImageInput = false;
+      _progressController.reset();
+      _progressController.animateTo(
+        0.95,
+        duration: const Duration(seconds: 15),
+        curve: Curves.easeOutCubic,
+      );
     });
     _scrollToBottom();
     _saveSession();
@@ -135,12 +200,13 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
     try {
       final result = await _consultationService.sendConsultation(
         user: 'Patient',
-        userPrompt: text,
+        userPrompt: enrichedPrompt, // kirim versi yang sudah diperkaya
         chatHistory: historySnapshot,
         imageUrl: imageUrl,
       );
 
-      // Setelah berhasil, masukkan giliran user + AI ke history
+      // Setelah berhasil, masukkan giliran user (teks asli) + AI ke history
+      // Simpan teks asli di history agar model melihat percakapan yang natural
       _apiHistory.add(ChatHistoryEntry(role: 'user', content: text));
       _apiHistory.add(ChatHistoryEntry(role: 'assistant', content: result.response));
 
@@ -553,7 +619,7 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '••• ANALYZING CLINICAL CONTEXT...',
+                    '••• ANALYZING CONTEXT...',
                     style: TextStyle(
                       color: Color(0xFF0284C7),
                       fontSize: 11,

@@ -27,6 +27,14 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
     await ref.read(authControllerProvider.notifier).logout();
     
     if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda telah berhasil keluar dari akun.'),
+          backgroundColor: Color(0xFF4CAF50),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const LandingPage(),
@@ -45,7 +53,15 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
       backgroundColor: Colors.white,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: _buildDialogContent(),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _isLoading
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: CreativeMedicalLoading(text: 'Keluar dari akun...'),
+                )
+              : _buildDialogContent(),
+        ),
       ),
     );
   }
@@ -115,16 +131,7 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
               ),
               elevation: 0,
             ),
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text(
+            child: const Text(
                     'Keluar',
                     style: TextStyle(
                       fontSize: 16,
