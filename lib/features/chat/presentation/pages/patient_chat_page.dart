@@ -11,15 +11,19 @@ import '../../../patients/presentation/controllers/patients_controller.dart';
 import 'package:lumira_ai_mobile/features/medical_review/presentation/pages/medical_review_page.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/patient_card.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_chat_page.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import 'package:lumira_ai_mobile/core/widgets/creative_medical_loading.dart';
 
 class PatientChatPage extends ConsumerStatefulWidget {
   final String patientName;
   final String patientId;
+  final String? medicalRecordId;
 
   const PatientChatPage({
     super.key,
     required this.patientName,
     required this.patientId,
+    this.medicalRecordId,
   });
 
   @override
@@ -31,12 +35,19 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
   final ScrollController _scrollController = ScrollController();
   bool _hasMedicalRecord = false;
   bool _isLoadingPatient = true;
+  bool _isNavigatingToDiagnosis = false;
   String _medicalRecordId = '';
 
   @override
   void initState() {
     super.initState();
-    _checkMedicalRecord();
+    if (widget.medicalRecordId != null && widget.medicalRecordId!.isNotEmpty) {
+      _medicalRecordId = widget.medicalRecordId!;
+      _isLoadingPatient = false;
+      _hasMedicalRecord = true;
+    } else {
+      _checkMedicalRecord();
+    }
   }
 
   Future<void> _checkMedicalRecord() async {
@@ -59,7 +70,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   void _sendMessage() {
     if (_textController.text.trim().isEmpty) return;
-    ref.read(chatControllerProvider((otherUserId: widget.patientId, medicalRecordId: '')).notifier)
+    ref.read(chatControllerProvider((otherUserId: widget.patientId, medicalRecordId: _medicalRecordId)).notifier)
         .sendMessage(_textController.text.trim());
     _textController.clear();
     _scrollToBottom();
@@ -79,9 +90,23 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Always use empty string for medicalRecordId to match the general patient-doctor room
-    final chatParams = (otherUserId: widget.patientId, medicalRecordId: '');
+    if (_isLoadingPatient) {
+      return const Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(40.0),
+            child: CreativeMedicalLoading(text: 'Loading...'),
+          ),
+        ),
+      );
+    }
+
+    final chatParams = (otherUserId: widget.patientId, medicalRecordId: _medicalRecordId);
     final chatState = ref.watch(chatControllerProvider(chatParams));
+    
+    final authState = ref.watch(authControllerProvider);
+    final isPatientRole = authState.user?.role == 'patient';
+    final counterpartImage = isPatientRole ? AppAssets.doctorProfile : AppAssets.patientProfile;
 
     // Auto-scroll when new messages arrive
     ref.listen(chatControllerProvider(chatParams), (previous, next) {
@@ -113,7 +138,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
         ),
         body: Column(
           children: [
-            _buildPatientInfoBar(),
+            _buildPatientInfoBar(counterpartImage),
             const Divider(height: 1, color: AppColors.border),
             if (chatState.error != null)
               Container(
@@ -164,7 +189,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
     );
   }
 
-  Widget _buildPatientInfoBar() {
+  Widget _buildPatientInfoBar(String imagePath) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
@@ -184,10 +209,16 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              color: const Color(0xFFE3F2FD),
               border: Border.all(color: Colors.blue.shade100, width: 2),
-              image: const DecorationImage(
-                image: AssetImage(AppAssets.doctorProfile),
-                fit: BoxFit.cover,
+            ),
+            child: ClipOval(
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
@@ -220,7 +251,8 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
   Widget _buildMessageBubble(ChatMessage message) {
     // Assuming local user is doctor -> senderRole could be 'doctor' or 'optimistic'
-    final isDoctor = message.senderRole == 'doctor' || message.senderRole == 'optimistic';
+    final role = message.senderRole.toLowerCase();
+    final isDoctor = role == 'doctor' || role == 'optimistic';
 
     return Align(
       alignment: isDoctor ? Alignment.centerRight : Alignment.centerLeft,
@@ -287,8 +319,10 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           _buildActionButton(Icons.assignment_outlined, 'Diagnosis', () {
-            _navigateToMedicalReview(context);
-          }),
+            if (!_isNavigatingToDiagnosis) {
+              _navigateToMedicalReview(context);
+            }
+          }, isLoading: _isNavigatingToDiagnosis),
           const SizedBox(width: 12),
           _buildActionButton(Icons.smart_toy_outlined, 'Ask AI', () {
             Navigator.push(
@@ -298,51 +332,65 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
               ),
             );
           }),
+
         ],
       ),
     );
   }
 
   void _navigateToMedicalReview(BuildContext context) async {
-    final patient = await ref.read(patientsControllerProvider.notifier).getPatientById(widget.patientId);
-    final latestRecord = patient?.latestRecord ?? (patient?.medicalRecords?.isNotEmpty == true ? patient!.medicalRecords!.first : null);
+    if (_isNavigatingToDiagnosis) return;
+    setState(() {
+      _isNavigatingToDiagnosis = true;
+    });
 
-    bool hasReview = false;
-    final diag = latestRecord?.doctorDiagnosis?.trim().toLowerCase();
-    if (diag != null && diag.isNotEmpty && diag != 'null') {
-      hasReview = true;
-    }
-    final agree = latestRecord?.agreement?.trim().toLowerCase();
-    if (agree != null && agree.isNotEmpty && agree != 'null') {
-      hasReview = true;
-    }
-    final status = latestRecord?.validationStatus?.toUpperCase();
-    final isDone = status == 'DONE' || status == 'VALIDATED' || hasReview;
+    try {
+      final patient = await ref.read(patientsControllerProvider.notifier).getPatientById(widget.patientId);
+      final latestRecord = patient?.latestRecord ?? (patient?.medicalRecords?.isNotEmpty == true ? patient!.medicalRecords!.first : null);
 
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MedicalReviewPage(
-          patientId: widget.patientId,
-          recordId: latestRecord?.id,
-          patientName: widget.patientName,
-          aiResult: AIResult.unknown,
-          phone: patient?.contactNumber ?? '08123456789',
-          rawImage: latestRecord?.imageUrl,
-          gradCamImage: latestRecord?.gradcamImageUrl,
-          isDone: isDone,
-          initialDoctorDiagnosis: latestRecord?.doctorDiagnosis,
-          initialDoctorNote: latestRecord?.doctorNotes,
-          initialAgreement: latestRecord?.agreement,
+      bool hasReview = false;
+      final diag = latestRecord?.doctorDiagnosis?.trim().toLowerCase();
+      if (diag != null && diag.isNotEmpty && diag != 'null') {
+        hasReview = true;
+      }
+      final agree = latestRecord?.agreement?.trim().toLowerCase();
+      if (agree != null && agree.isNotEmpty && agree != 'null') {
+        hasReview = true;
+      }
+      final status = latestRecord?.validationStatus?.toUpperCase();
+      final isDone = status == 'DONE' || status == 'VALIDATED' || hasReview;
+
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MedicalReviewPage(
+            patientId: widget.patientId,
+            recordId: latestRecord?.id,
+            patientName: widget.patientName,
+            aiResult: AIResult.unknown,
+            phone: patient?.contactNumber ?? '08123456789',
+            rawImage: latestRecord?.imageUrl,
+            gradCamImage: latestRecord?.gradcamImageUrl,
+            isDone: isDone,
+            initialDoctorDiagnosis: latestRecord?.doctorDiagnosis,
+            initialDoctorNote: latestRecord?.doctorNotes,
+            initialAgreement: latestRecord?.agreement,
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isNavigatingToDiagnosis = false;
+        });
+      }
+    }
   }
 
-  Widget _buildActionButton(IconData icon, String label, VoidCallback onTap) {
+  Widget _buildActionButton(IconData icon, String label, VoidCallback onTap, {bool isLoading = false}) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -359,7 +407,17 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: const Color(0xFF60A5FA), size: 18),
+            if (isLoading)
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF60A5FA),
+                ),
+              )
+            else
+              Icon(icon, color: const Color(0xFF60A5FA), size: 18),
             const SizedBox(width: 8),
             Text(
               label,
@@ -376,12 +434,17 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
   }
 
   Widget _buildInputArea() {
-    final isDisabled = _isLoadingPatient || !_hasMedicalRecord;
+    final isDisabled = _isLoadingPatient;
 
     return Container(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 8),
       color: Colors.white,
-      child: Row(
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 8),
+          child: Row(
         children: [
           Expanded(
             child: Container(
@@ -422,6 +485,8 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

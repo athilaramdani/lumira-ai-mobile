@@ -8,6 +8,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../domain/entities/chat_message.dart';
 import '../controllers/chat_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../../core/widgets/creative_medical_loading.dart';
 
 /// Patient-side chat page.
 /// The family param for chatControllerProvider is the patient's own user ID.
@@ -78,12 +79,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     // The controller detects role='patient' and builds roomId = 'room_{patientId}'
     final myId = authState.user?.id ?? '';
 
-    if (myId.isEmpty) {
+    if (myId.isEmpty || _medicalRecordId.isEmpty) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(40.0),
+            child: CreativeMedicalLoading(text: 'Preparing chat...'),
+          ),
+        ),
       );
     }
 
+    // Use the loaded medicalRecordId
     final chatParams = (otherUserId: widget.doctorId ?? '', medicalRecordId: _medicalRecordId);
     final chatState = ref.watch(chatControllerProvider(chatParams));
 
@@ -113,8 +120,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFF40B4FF).withValues(alpha: 0.15),
-                backgroundImage: const AssetImage(AppAssets.doctor),
+                backgroundColor: const Color(0xFFE3F2FD),
+                child: Padding(
+                  padding: const EdgeInsets.all(2.0),
+                  child: Image.asset(
+                    AppAssets.doctorProfile,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Column(
@@ -176,7 +189,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               child: Container(
                 color: const Color(0xFFF8FAFC),
                 child: chatState.isLoading && chatState.messages.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: CreativeMedicalLoading(text: 'Loading messages...'),
+                      )
                     : chatState.messages.isEmpty
                         ? Center(
                             child: Column(
@@ -211,7 +226,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    final isMe = message.senderRole == 'patient' || message.senderRole == 'optimistic';
+    final role = message.senderRole.toLowerCase();
+    final isMe = role == 'patient' || role == 'optimistic';
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -289,7 +305,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Widget _buildInputArea(String myId) {
     return Container(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -300,7 +315,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
         ],
       ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 8),
+          child: Row(
         children: [
           Expanded(
             child: Container(
@@ -335,6 +356,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

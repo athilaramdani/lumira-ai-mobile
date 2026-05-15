@@ -24,24 +24,36 @@ final deletePatientUseCaseProvider = Provider((ref) => DeletePatientUseCase(ref.
 // State
 class PatientsState {
   final bool isLoading;
+  final bool isLoadingMore;
   final String? error;
   final List<PatientModel> patients;
+  final int page;
+  final bool hasReachedMax;
 
   PatientsState({
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.error,
     this.patients = const [],
+    this.page = 1,
+    this.hasReachedMax = false,
   });
 
   PatientsState copyWith({
     bool? isLoading,
+    bool? isLoadingMore,
     String? error,
     List<PatientModel>? patients,
+    int? page,
+    bool? hasReachedMax,
   }) {
     return PatientsState(
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: error,
       patients: patients ?? this.patients,
+      page: page ?? this.page,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 }
@@ -66,13 +78,45 @@ class PatientsController extends StateNotifier<PatientsState> {
         _deletePatient = deletePatient,
         super(PatientsState());
 
-  Future<void> fetchPatients() async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> fetchPatients({bool refresh = false, bool loadMore = false}) async {
+    if (state.isLoading || state.isLoadingMore) return;
+    if (loadMore && state.hasReachedMax) return;
+
+    if (refresh) {
+      state = state.copyWith(isLoading: true, error: null, page: 1, hasReachedMax: false);
+    } else if (loadMore) {
+      state = state.copyWith(isLoadingMore: true, error: null);
+    } else {
+      state = state.copyWith(isLoading: true, error: null, page: 1, hasReachedMax: false);
+    }
+
     try {
-      final patients = await _getPatients();
-      state = state.copyWith(isLoading: false, patients: patients);
+      final currentPage = refresh ? 1 : (loadMore ? state.page + 1 : 1);
+      final newPatients = await _getPatients(page: currentPage, limit: 100);
+      
+      final hasReachedMax = newPatients.length < 100;
+      
+      if (refresh || !loadMore) {
+        state = state.copyWith(
+          isLoading: false, 
+          patients: newPatients,
+          page: currentPage,
+          hasReachedMax: hasReachedMax,
+        );
+      } else {
+        state = state.copyWith(
+          isLoadingMore: false,
+          patients: [...state.patients, ...newPatients],
+          page: currentPage,
+          hasReachedMax: hasReachedMax,
+        );
+      }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false, 
+        isLoadingMore: false,
+        error: e.toString()
+      );
     }
   }
 

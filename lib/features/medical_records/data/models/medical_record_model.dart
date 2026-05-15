@@ -10,6 +10,7 @@ class MedicalRecordModel {
   final String? doctorDiagnosis;
   final String? gradcamImageUrl;
   final String? agreement;
+  final Map<String, dynamic>? doctor;
 
   MedicalRecordModel({
     this.id,
@@ -23,6 +24,7 @@ class MedicalRecordModel {
     this.doctorDiagnosis,
     this.gradcamImageUrl,
     this.agreement,
+    this.doctor,
   });
 
   factory MedicalRecordModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class MedicalRecordModel {
       doctorDiagnosis: json['doctor_diagnosis'] ?? json['doctorDiagnosis'],
       gradcamImageUrl: json['ai_gradcam_path'] ?? json['gradcam_image_url'] ?? json['gradcamImageUrl'],
       agreement: json['agreement'],
+      doctor: json['doctor'],
     );
   }
 }

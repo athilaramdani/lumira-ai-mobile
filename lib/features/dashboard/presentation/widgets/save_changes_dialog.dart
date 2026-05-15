@@ -54,9 +54,7 @@ class SaveChangesDialog extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Simulate saving and go back twice (close dialog + close edit page)
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(true);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -81,7 +79,7 @@ class SaveChangesDialog extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
+                  Navigator.of(context).pop(false); // Close the dialog with false
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE0E0E0), // Light gray

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
+import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_header.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_section_card.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_info_row.dart';
@@ -12,11 +13,18 @@ import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/logout_
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
-class ProfileView extends ConsumerWidget {
+class ProfileView extends ConsumerStatefulWidget {
   const ProfileView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends ConsumerState<ProfileView> {
+  bool _notificationsEnabled = true;
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final user = authState.user;
 
@@ -43,6 +51,8 @@ class ProfileView extends ConsumerWidget {
         ProfileHeader(
           patientId: id,
           patientName: name,
+          imageUrl: user?.imageUrl,
+          imagePath: user?.role == 'doctor' ? AppAssets.doctorProfile : AppAssets.patientProfile,
           onEditTap: () {
             Navigator.push(
               context,
@@ -117,8 +127,12 @@ class ProfileView extends ConsumerWidget {
                 icon: Icons.notifications_none,
                 title: 'Notifications',
                 trailing: Switch(
-                  value: true,
-                  onChanged: (bool value) {},
+                  value: _notificationsEnabled,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _notificationsEnabled = value;
+                    });
+                  },
                   activeColor: AppColors.primary,
                 ),
               ),

@@ -3,12 +3,12 @@ import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_mo
 
 /// Service untuk berkomunikasi dengan AI consultation endpoint.
 /// 
-/// Endpoint  : POST https://lewis-facility-chassis-gsm.trycloudflare.com/consultations
+/// Endpoint  : POST https://tablet-pending-byte-julian.trycloudflare.com/consultations
 /// Auth      : Bearer XiueX_Lumira+MedWTelU  (static key – bukan token user)
 /// Body      : { user, user_prompt, chat_history, image? }
 class ConsultationService {
   static const String _baseUrl =
-      'https://lewis-facility-chassis-gsm.trycloudflare.com';
+      'https://tablet-pending-byte-julian.trycloudflare.com';
   static const String _apiToken = 'XiueX_Lumira+MedWTelU';
   static const String _endpoint = '/consultations';
 
@@ -90,11 +90,25 @@ class ConsultationService {
             '';
       }
 
+      // ── Bersihkan teks dari proses berpikir AI (thought process) ──
+      // Hapus blok <unused94>thought ... <unused94> atau </unused94> atau jika tidak ditutup (hingga akhir)
+      aiText = aiText.replaceAll(RegExp(r'<unused94>thought[\s\S]*?(?:</unused94>|<unused94>|$)'), '');
+      // Hapus blok <think> ... </think> jika ada
+      aiText = aiText.replaceAll(RegExp(r'<think>[\s\S]*?(?:</think>|$)'), '');
+      // Hapus sisa-sisa spasi berlebih
+      aiText = aiText.trim();
+
+      // ── Bersihkan duplikasi baris (model looping) ──
+      // Contoh kasus: "Terapi Adjuvant: ..." muncul 8-12 kali berturut-turut.
+      aiText = _removeDuplicateLines(aiText);
+
       print('[ConsultationService] ✅ Parsed AI text (${aiText.length} chars): '
           '${aiText.length > 80 ? '${aiText.substring(0, 80)}...' : aiText}');
 
       if (aiText.isEmpty) {
-        throw Exception('AI tidak mengembalikan teks. Raw: $rawData');
+        // Jika teks kosong karena seluruh respons adalah proses berpikir yang terpotong,
+        // berikan fallback pesan yang ramah alih-alih melempar Exception.
+        aiText = 'Mohon maaf, pemrosesan jawaban terpotong karena batas sistem. Silakan ajukan pertanyaan yang lebih singkat atau buat sesi obrolan baru.';
       }
 
       return ConsultationResponse(
@@ -131,5 +145,42 @@ class ConsultationService {
           'Unknown error';
     }
     return responseData?.toString() ?? 'Unknown error';
+  }
+
+  /// Hapus baris duplikat yang berurutan – gejala model looping.
+  ///
+  /// Algoritma:
+  ///  1. Split teks per baris.
+  ///  2. Normalisasi setiap baris: hapus nomor urut (1. 2. 3.) dan bullet (* - •)
+  ///     dari awal baris agar perbandingan tidak gagal hanya karena nomor berbeda.
+  ///  3. Jika normalized-nya sama dengan baris sebelumnya (case-insensitive),
+  ///     baris ini dianggap duplikat dan dibuang.
+  String _removeDuplicateLines(String text) {
+    final lines = text.split('\n');
+    final result = <String>[];
+    String? prevNormalized;
+
+    for (final line in lines) {
+      // Normalisasi: hapus leading bullet/number dan whitespace
+      final normalized = line
+          .replaceFirst(RegExp(r'^\s*(\d+\.|[-*•])\s*'), '')
+          .trim()
+          .toLowerCase();
+
+      // Baris kosong selalu dipertahankan (untuk format paragraf)
+      if (normalized.isEmpty) {
+        result.add(line);
+        prevNormalized = null; // reset agar baris berikut tidak dianggap duplikat baris kosong
+        continue;
+      }
+
+      if (normalized != prevNormalized) {
+        result.add(line);
+        prevNormalized = normalized;
+      }
+      // else: baris duplikat, skip
+    }
+
+    return result.join('\n');
   }
 }

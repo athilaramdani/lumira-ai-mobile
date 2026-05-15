@@ -91,10 +91,16 @@ class PatientCard extends StatelessWidget {
                 height: 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  color: const Color(0xFFE3F2FD),
                   border: Border.all(color: Colors.blue.shade100, width: 2),
-                  image: const DecorationImage(
-                    image: AssetImage(AppAssets.doctorProfile),
-                    fit: BoxFit.cover,
+                ),
+                child: ClipOval(
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Image.asset(
+                      AppAssets.patientProfile,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),

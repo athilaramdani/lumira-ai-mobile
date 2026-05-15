@@ -6,6 +6,7 @@ class ProfileHeader extends StatelessWidget {
   final String patientId;
   final String patientName;
   final String imagePath;
+  final String? imageUrl;
   final VoidCallback? onEditTap;
   final IconData editIcon;
 
@@ -14,6 +15,7 @@ class ProfileHeader extends StatelessWidget {
     required this.patientId,
     required this.patientName,
     this.imagePath = AppAssets.dummyProfile,
+    this.imageUrl,
     this.onEditTap,
     this.editIcon = Icons.edit,
   });
@@ -87,14 +89,25 @@ class ProfileHeader extends StatelessWidget {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      color: const Color(0xFFE3F2FD), // Light blue background like primaryLight
                       border: Border.all(
                         color: Colors.white,
                         width: 4,
                       ),
-                      image: DecorationImage(
-                        image: AssetImage(imagePath),
-                        fit: BoxFit.cover,
-                      ),
+                    ),
+                    child: ClipOval(
+                      child: (imageUrl != null && imageUrl!.isNotEmpty)
+                          ? Image.network(
+                              imageUrl!,
+                              fit: BoxFit.cover,
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.asset(
+                                imagePath,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
                     ),
                   ),
                   GestureDetector(

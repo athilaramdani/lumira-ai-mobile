@@ -11,6 +11,18 @@ import 'package:lumira_ai_mobile/core/services/firebase_service.dart';
 // If not yet generated, Firebase will be initialized without options (Android/iOS only)
 // For Web, firebase_options.dart MUST be generated
 import 'firebase_options.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint('[FCM] Background message: ${message.messageId}');
+  await FirebaseService.initLocalNotifications();
+  FirebaseService.showLocalNotification(message);
+}
+
+final GlobalKey<ScaffoldMessengerState> globalMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +33,9 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    if (!kIsWeb) {
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    }
     await FirebaseService.initialize();
   } catch (e) {
     debugPrint('[Firebase] Init error: $e');
@@ -37,6 +52,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Lumira AI',
+      scaffoldMessengerKey: globalMessengerKey,
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch, PointerDeviceKind.stylus, PointerDeviceKind.unknown},

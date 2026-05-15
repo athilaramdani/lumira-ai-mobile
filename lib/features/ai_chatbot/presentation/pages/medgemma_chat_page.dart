@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/datasources/consultation_service.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_model.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/controllers/medgemma_history_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Message model lokal
@@ -19,22 +22,38 @@ class MedgemmaMessage {
     required this.time,
     this.imageUrl,
   });
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'isUser': isUser,
+        'time': time,
+        'imageUrl': imageUrl,
+      };
+
+  factory MedgemmaMessage.fromJson(Map<String, dynamic> json) =>
+      MedgemmaMessage(
+        text: json['text'] as String,
+        isUser: json['isUser'] as bool,
+        time: json['time'] as String,
+        imageUrl: json['imageUrl'] as String?,
+      );
 }
 
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-class MedgemmaChatPage extends StatefulWidget {
+class MedgemmaChatPage extends ConsumerStatefulWidget {
   /// Jika dibuka dari halaman scan, image URL bisa langsung dioper
   final String? initialImageUrl;
+  final String? sessionId;
 
-  const MedgemmaChatPage({super.key, this.initialImageUrl});
+  const MedgemmaChatPage({super.key, this.initialImageUrl, this.sessionId});
 
   @override
-  State<MedgemmaChatPage> createState() => _MedgemmaChatPageState();
+  ConsumerState<MedgemmaChatPage> createState() => _MedgemmaChatPageState();
 }
 
-class _MedgemmaChatPageState extends State<MedgemmaChatPage>
+class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
     with SingleTickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _imageUrlController = TextEditingController();
@@ -56,19 +75,36 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
   /// Image URL aktif (dari parameter awal atau input manual)
   String? _activeImageUrl;
 
+  late String _currentSessionId;
+
+  /// Topik medis utama yang terdeteksi dari percakapan ini.
+  /// Digunakan untuk memperkaya konteks pesan follow-up yang ambigu.
+  String? _detectedMedicalTopic;
+
   @override
   void initState() {
     super.initState();
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
+      duration: const Duration(seconds: 15),
+    );
 
     // Jika ada gambar awal dari halaman scan
     if (widget.initialImageUrl != null &&
         widget.initialImageUrl!.isNotEmpty) {
       _activeImageUrl = widget.initialImageUrl;
       _imageUrlController.text = widget.initialImageUrl!;
+    }
+
+    if (widget.sessionId != null) {
+      _currentSessionId = widget.sessionId!;
+      final session = ref.read(medgemmaHistoryProvider.notifier).getSession(_currentSessionId);
+      if (session != null) {
+        _messages.addAll(session.messages);
+        _apiHistory.addAll(session.apiHistory);
+      }
+    } else {
+      _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
     }
   }
 
@@ -84,6 +120,29 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
   // -------------------------------------------------------------------------
   // Send message
   // -------------------------------------------------------------------------
+  // ── Kata kunci medis yang jika ada → topik terdeteksi ──────────────────
+  static const List<String> _medicalKeywords = [
+    'kanker', 'tumor', 'kista', 'mammogram', 'biopsi', 'radiasi',
+    'kemoterapi', 'onkologi', 'metastasis', 'stadium', 'payudara',
+    'paru', 'hati', 'leher rahim', 'serviks', 'prostat', 'diabetes',
+    'hipertensi', 'jantung', 'stroke', 'tbc', 'anemia', 'asma',
+    'limfoma', 'leukemia', 'fibroid', 'polip',
+  ];
+
+  /// Ekstrak topik medis dari teks. Return null jika tidak ada.
+  String? _extractTopic(String text) {
+    final lower = text.toLowerCase();
+    for (final kw in _medicalKeywords) {
+      if (lower.contains(kw)) return kw;
+    }
+    return null;
+  }
+
+  /// Cek apakah teks mengandung kata kunci medis eksplisit.
+  bool _hasExplicitMedicalContext(String text) {
+    return _extractTopic(text) != null;
+  }
+
   Future<void> _sendMessage() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
@@ -93,7 +152,24 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
         ? _imageUrlController.text.trim()
         : _activeImageUrl;
 
-    // Tambah pesan user ke UI
+    // ── Deteksi & perbarui topik dari pesan user ──
+    final topicInMessage = _extractTopic(text);
+    if (topicInMessage != null) {
+      _detectedMedicalTopic = topicInMessage;
+    }
+
+    // ── Perkaya prompt jika ini pesan follow-up yang ambigu ──
+    // Kondisi: ada riwayat percakapan, tapi pesan sekarang tidak punya
+    // kata kunci medis eksplisit → sisipkan konteks topik sesi.
+    String enrichedPrompt = text;
+    if (_apiHistory.isNotEmpty &&
+        !_hasExplicitMedicalContext(text) &&
+        _detectedMedicalTopic != null) {
+      enrichedPrompt =
+          '[Konteks: pertanyaan ini masih dalam topik $_detectedMedicalTopic] $text';
+    }
+
+    // Tambah pesan user ke UI (tampilkan teks asli, bukan yang sudah diperkaya)
     final userMsg = MedgemmaMessage(
       text: text,
       isUser: true,
@@ -106,8 +182,15 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
       _textController.clear();
       _isAiTyping = true;
       _showImageInput = false;
+      _progressController.reset();
+      _progressController.animateTo(
+        0.95,
+        duration: const Duration(seconds: 15),
+        curve: Curves.easeOutCubic,
+      );
     });
     _scrollToBottom();
+    _saveSession();
 
     // Simpan ke riwayat API (untuk dikirim sebagai chat_history pada request berikutnya)
     // Catatan: pesan yang BARU saja diketik tidak dimasukkan ke chat_history –
@@ -117,12 +200,13 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
     try {
       final result = await _consultationService.sendConsultation(
         user: 'Patient',
-        userPrompt: text,
+        userPrompt: enrichedPrompt, // kirim versi yang sudah diperkaya
         chatHistory: historySnapshot,
         imageUrl: imageUrl,
       );
 
-      // Setelah berhasil, masukkan giliran user + AI ke history
+      // Setelah berhasil, masukkan giliran user (teks asli) + AI ke history
+      // Simpan teks asli di history agar model melihat percakapan yang natural
       _apiHistory.add(ChatHistoryEntry(role: 'user', content: text));
       _apiHistory.add(ChatHistoryEntry(role: 'assistant', content: result.response));
 
@@ -136,6 +220,7 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
           ));
         });
         _scrollToBottom();
+        _saveSession();
       }
     } catch (e) {
       // Masukkan pesan user ke history meski gagal agar konteks tidak hilang
@@ -151,8 +236,25 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
           ));
         });
         _scrollToBottom();
+        _saveSession();
       }
     }
+  }
+
+  void _saveSession() {
+    if (_messages.isEmpty) return;
+    final title = _messages.first.text;
+    final snippet = _messages.last.text;
+
+    final session = MedgemmaChatSession(
+      id: _currentSessionId,
+      title: title,
+      snippet: snippet,
+      messages: List.from(_messages),
+      apiHistory: List.from(_apiHistory),
+      lastUpdated: DateTime.now(),
+    );
+    ref.read(medgemmaHistoryProvider.notifier).addOrUpdateSession(session);
   }
 
   // -------------------------------------------------------------------------
@@ -380,153 +482,172 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
   }
 
   Widget _buildMessageBubble(MedgemmaMessage message) {
-    return Align(
-      alignment:
-          message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+    final bubbleContent = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.75,
+      ),
+      decoration: BoxDecoration(
+        color: message.isUser
+            ? const Color(0xFFE5E7EB) // Light gray for User
+            : const Color(0xFFC7E8FF), // Light blue for AI
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: message.isUser ? const Radius.circular(16) : Radius.zero,
+          bottomRight: message.isUser ? Radius.zero : const Radius.circular(16),
         ),
-        decoration: BoxDecoration(
-          color: message.isUser
-              ? const Color(0xFF40B4FF)
-              : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: message.isUser
-                ? const Radius.circular(16)
-                : Radius.zero,
-            bottomRight: message.isUser
-                ? Radius.zero
-                : const Radius.circular(16),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: message.isUser
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            // Tampilkan thumbnail gambar jika ada
-            if (message.imageUrl != null && message.imageUrl!.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  message.imageUrl!,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Row(
-                    children: [
-                      Icon(Icons.broken_image, color: Colors.white54, size: 20),
-                      SizedBox(width: 4),
-                      Text(
-                        'Gambar tidak dapat dimuat',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
-                  ),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (message.imageUrl != null && message.imageUrl!.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                message.imageUrl!,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Row(
+                  children: [
+                    Icon(Icons.broken_image, color: Colors.black54, size: 20),
+                    SizedBox(width: 4),
+                    Text(
+                      'Gambar tidak dapat dimuat',
+                      style: TextStyle(color: Colors.black87, fontSize: 11),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-            ],
-            Text(
-              message.text,
-              style: TextStyle(
-                color:
-                    message.isUser ? Colors.white : Colors.black87,
+            ),
+            const SizedBox(height: 8),
+          ],
+          MarkdownBody(
+            data: message.text,
+            styleSheet: MarkdownStyleSheet(
+              p: const TextStyle(
+                color: Colors.black87,
                 fontSize: 14,
-                height: 1.4,
+                height: 1.5,
+              ),
+              strong: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 6),
-            if (message.time.isNotEmpty)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!message.isUser)
-                    Text(
-                      message.time,
-                      style: TextStyle(
-                          color: Colors.grey[400], fontSize: 10),
-                    ),
-                  if (message.isUser)
-                    const Icon(Icons.done_all,
-                        color: Colors.white, size: 14),
-                ],
+          ),
+          const SizedBox(height: 6),
+          if (message.time.isNotEmpty)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  message.time,
+                  style: const TextStyle(color: Colors.black54, fontSize: 10),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!message.isUser) ...[
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F2FE),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFBAE6FD)),
               ),
+              child: const Icon(Icons.smart_toy_outlined,
+                  size: 16, color: Color(0xFF0284C7)),
+            ),
           ],
-        ),
+          Flexible(child: bubbleContent),
+          if (message.isUser) ...[
+            const SizedBox(width: 8), // Provide some spacing from right edge if needed
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildTypingIndicator() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(16),
-            bottomLeft: Radius.zero,
-            bottomRight: Radius.circular(16),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE0F2FE),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFBAE6FD)),
+            ),
+            child: const Icon(Icons.smart_toy_outlined,
+                size: 16, color: Color(0xFF0284C7)),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '••• ANALYZING CLINICAL CONTEXT...',
-              style: TextStyle(
-                color: Color(0xFF0EA5E9),
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              decoration: const BoxDecoration(
+                color: Color(0xFFC7E8FF),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.zero,
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '••• ANALYZING CONTEXT...',
+                    style: TextStyle(
+                      color: Color(0xFF0284C7),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: AnimatedBuilder(
+                      animation: _progressController,
+                      builder: (context, child) {
+                        return LinearProgressIndicator(
+                          value: _progressController.value,
+                          minHeight: 8,
+                          backgroundColor: Colors.white54,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF0284C7)),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: AnimatedBuilder(
-                animation: _progressController,
-                builder: (context, child) {
-                  return LinearProgressIndicator(
-                    value: _progressController.value,
-                    minHeight: 8,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF40B4FF)),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -534,9 +655,13 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
   Widget _buildBottomInputArea() {
     return Container(
       color: Colors.white,
-      padding:
-          const EdgeInsets.only(bottom: 24, top: 12, left: 16, right: 16),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 12, top: 12, left: 16, right: 16),
+          child: Row(
         children: [
           // Tombol lampirkan gambar
           IconButton(
@@ -597,6 +722,8 @@ class _MedgemmaChatPageState extends State<MedgemmaChatPage>
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }
