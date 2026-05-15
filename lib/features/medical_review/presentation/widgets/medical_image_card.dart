@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 
@@ -31,14 +32,9 @@ class MedicalImageCard extends StatelessWidget {
             fit: BoxFit.cover,
           );
 
-    if (isNormalized) {
-      imageWidget = ColorFiltered(
-        colorFilter: const ColorFilter.matrix(<double>[
-          0.33, 0.59, 0.11, 0, 0,
-          0.33, 0.59, 0.11, 0, 0,
-          0.33, 0.59, 0.11, 0, 0,
-          0,    0,    0,    1, 0,
-        ]),
+    if (!isNormalized) {
+      imageWidget = ImageFiltered(
+        imageFilter: ui.ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
         child: imageWidget,
       );
     }

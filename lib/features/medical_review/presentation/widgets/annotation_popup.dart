@@ -336,19 +336,13 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
   }
 
   Widget _buildBaseImage() {
-    if (_isNormalized) {
+    if (!_isNormalized) {
       // Apply normalized effect to the actual raw backend image
       final hasRaw =
           widget.rawImagePath != null && widget.rawImagePath!.isNotEmpty;
       final isNet = widget.isRawNetwork;
-      return ColorFiltered(
-        colorFilter: const ColorFilter.matrix(<double>[
-          // greyscale + contrast boost (simulates medical normalized view)
-          0.33, 0.59, 0.11, 0, 0,
-          0.33, 0.59, 0.11, 0, 0,
-          0.33, 0.59, 0.11, 0, 0,
-          0, 0, 0, 1, 0,
-        ]),
+      return ImageFiltered(
+        imageFilter: ui.ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
         child: hasRaw
             ? (isNet
                 ? Image.network(widget.rawImagePath!, fit: BoxFit.cover)
@@ -426,16 +420,43 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
             ),
             Row(
               children: [
-                const Text('Raw',
-                    style: TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary)),
-                Switch(
-                  value: _isNormalized,
-                  onChanged: (val) => setState(() => _isNormalized = val),
-                  activeColor: AppColors.primary,
+                GestureDetector(
+                  onTap: () => setState(() => _isNormalized = false),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: !_isNormalized ? AppColors.primary : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Raw Pixels',
+                      style: TextStyle(
+                        fontSize: 12, 
+                        color: !_isNormalized ? Colors.white : Colors.grey.shade700, 
+                        fontWeight: !_isNormalized ? FontWeight.w600 : FontWeight.w500
+                      ),
+                    ),
+                  ),
                 ),
-                const Text('Normalized',
-                    style: TextStyle(fontSize: 12, color: Colors.white60)),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () => setState(() => _isNormalized = true),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _isNormalized ? AppColors.primary : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Normalized',
+                      style: TextStyle(
+                        fontSize: 12, 
+                        color: _isNormalized ? Colors.white : Colors.grey.shade700, 
+                        fontWeight: _isNormalized ? FontWeight.w600 : FontWeight.w500
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
