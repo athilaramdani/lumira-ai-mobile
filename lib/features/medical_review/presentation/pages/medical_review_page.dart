@@ -122,12 +122,27 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                 child: Column(
                   children: [
                     const SizedBox(height: 10),
-                    Text(
-                      'Welcome $doctorName!',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                          Expanded(
+                            child: Text(
+                              'Welcome $doctorName!',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 40), // Balance the back button to center the text
+                        ],
                       ),
                     ),
                     const SizedBox(height: 20),
