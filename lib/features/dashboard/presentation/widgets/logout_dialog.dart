@@ -21,9 +21,6 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
       _isLoading = true;
     });
 
-    // Simulate animation time (at least 2.5s for the wow factor)
-    await Future.delayed(const Duration(milliseconds: 2500));
-    
     await ref.read(authControllerProvider.notifier).logout();
     
     if (mounted) {
