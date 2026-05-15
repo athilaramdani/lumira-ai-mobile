@@ -7,6 +7,7 @@ class MedicalImageCard extends StatelessWidget {
   final Widget? overlay;
   final String? badgeText;
   final bool isNetwork;
+  final bool isNormalized;
 
   const MedicalImageCard({
     super.key,
@@ -15,10 +16,33 @@ class MedicalImageCard extends StatelessWidget {
     this.overlay,
     this.badgeText,
     this.isNetwork = false,
+    this.isNormalized = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    Widget imageWidget = isNetwork 
+        ? Image.network(
+            imagePath,
+            fit: BoxFit.cover,
+          )
+        : Image.asset(
+            imagePath,
+            fit: BoxFit.cover,
+          );
+
+    if (isNormalized) {
+      imageWidget = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          0.33, 0.59, 0.11, 0, 0,
+          0.33, 0.59, 0.11, 0, 0,
+          0.33, 0.59, 0.11, 0, 0,
+          0,    0,    0,    1, 0,
+        ]),
+        child: imageWidget,
+      );
+    }
+
     return Column(
       children: [
         Container(
@@ -34,21 +58,11 @@ class MedicalImageCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   clipBehavior: Clip.hardEdge,
                   child: SizedBox(
-                    width: 500,
-                    height: 500,
+                    width: 400,
+                    height: 400,
                     child: Stack(
                       children: [
-                        Positioned.fill(
-                          child: isNetwork 
-                              ? Image.network(
-                                  imagePath,
-                                  fit: BoxFit.cover,
-                                )
-                              : Image.asset(
-                                  imagePath,
-                                  fit: BoxFit.cover,
-                                ),
-                        ),
+                        Positioned.fill(child: imageWidget),
                         if (overlay != null)
                           Positioned.fill(child: overlay!),
                       ],
