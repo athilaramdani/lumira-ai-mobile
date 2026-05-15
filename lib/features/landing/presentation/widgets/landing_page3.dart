@@ -71,115 +71,143 @@ class _LandingPage3State extends State<LandingPage3>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Top Wave Background
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 300,
-          child: ClipPath(
-            clipper: TopCurveClipper(),
-            child: Container(
-              color: const Color(0xFFCBEBFA),
+    final isAi = _currentInnerPage == 0;
+    final baseColor = isAi ? Colors.white : AppColors.primaryLighter;
+    final accentColor = isAi ? AppColors.primaryLighter : Colors.white;
+    final primaryTextColor = isAi ? Colors.white : AppColors.primary;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      color: baseColor,
+      child: Stack(
+        children: [
+          // Top Wave Background
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 300,
+            child: ClipPath(
+              clipper: TopCurveClipper(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                color: accentColor,
+              ),
             ),
           ),
-        ),
-        
-        SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              SlideTransition(
-                position: _slideAnimation,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Column(
+          
+          // Bottom Wave Background
+          Positioned(
+            bottom: -50,
+            left: -50,
+            right: -50,
+            height: 250,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              decoration: BoxDecoration(
+                color: accentColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Column(
+                      children: [
+                        Text(
+                          'KEY FEATURES',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: primaryTextColor,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Leading-edge technology for better diagnosis',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: primaryTextColor.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                // Inner Slider
+                SizedBox(
+                  height: 400,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      const Text(
-                        'KEY FEATURES',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                          letterSpacing: 1.2,
+                      // Big Center Circle Background
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 320,
+                        height: 320,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: accentColor,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Leading-edge technology for better diagnosis',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.primary.withOpacity(0.8),
+                      
+                      // Inner PageView
+                      PageView(
+                        controller: _innerPageController,
+                        onPageChanged: (index) {
+                          setState(() { _currentInnerPage = index; });
+                        },
+                        children: [
+                          _buildFeatureItem(
+                            icon: Icons.memory,
+                            title: 'AI Analysis',
+                            description: 'Automated mammogram\nimage analysis using deep\nlearning algorithms with\nhigh accuracy for early\nbreast cancer detection.',
+                            textColor: Colors.white,
+                          ),
+                          _buildFeatureItem(
+                            icon: Icons.medical_services_outlined,
+                            title: 'Doctor Review',
+                            description: 'AI results are reviewed by\nspecialist doctors to ensure\nan accurate diagnosis and\nappropriate treatment.',
+                            textColor: AppColors.primary,
+                          ),
+                        ],
+                      ),
+
+                      // Left/Right Nav Indicators
+                      Positioned(
+                        left: 16,
+                        child: _buildArrowButton(
+                          icon: Icons.arrow_back_ios_new,
+                          isActive: _currentInnerPage > 0,
+                          onPressed: _prevInnerSlide,
+                        ),
+                      ),
+                      Positioned(
+                        right: 16,
+                        child: _buildArrowButton(
+                          icon: Icons.arrow_forward_ios,
+                          isActive: _currentInnerPage < 1,
+                          onPressed: _nextInnerSlide,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const Spacer(),
-              // Inner Slider
-              SizedBox(
-                height: 400,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Big Center Circle Background
-                    Container(
-                      width: 320,
-                      height: 320,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFCBEBFA).withOpacity(0.5),
-                      ),
-                    ),
-                    
-                    // Inner PageView
-                    PageView(
-                      controller: _innerPageController,
-                      onPageChanged: (index) {
-                        setState(() { _currentInnerPage = index; });
-                      },
-                      children: [
-                        _buildFeatureItem(
-                          icon: Icons.memory,
-                          title: 'AI Analysis',
-                          description: 'Automated mammogram\nimage analysis using deep\nlearning algorithms with\nhigh accuracy for early\nbreast cancer detection.',
-                        ),
-                        _buildFeatureItem(
-                          icon: Icons.medical_services_outlined,
-                          title: 'Doctor Review',
-                          description: 'AI results are reviewed by\nspecialist doctors to ensure\nan accurate diagnosis and\nappropriate treatment.',
-                        ),
-                      ],
-                    ),
-
-                    // Left/Right Nav Indicators
-                    Positioned(
-                      left: 16,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios),
-                        color: _currentInnerPage == 0 ? Colors.white54 : Colors.white,
-                        onPressed: _prevInnerSlide,
-                      ),
-                    ),
-                    Positioned(
-                      right: 16,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_forward_ios),
-                        color: _currentInnerPage == 1 ? Colors.white54 : Colors.white,
-                        onPressed: _nextInnerSlide,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(flex: 2),
-            ],
+                const Spacer(flex: 2),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -187,31 +215,59 @@ class _LandingPage3State extends State<LandingPage3>
     required IconData icon,
     required String title,
     required String description,
+    required Color textColor,
   }) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 80, color: Colors.white),
+        Icon(icon, size: 80, color: textColor),
         const SizedBox(height: 16),
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 24,
+          style: TextStyle(
+            fontSize: 26,
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: textColor,
           ),
         ),
         const SizedBox(height: 16),
         Text(
           description,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            color: Colors.white,
+            color: textColor,
             height: 1.5,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildArrowButton({
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onPressed,
+  }) {
+    final bgColor = isActive ? AppColors.primary : AppColors.primary.withOpacity(0.3);
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            if (isActive)
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
     );
   }
 }
