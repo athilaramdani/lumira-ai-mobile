@@ -3,6 +3,7 @@ import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_chat_page.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/controllers/medgemma_history_controller.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/ai_result_interpretation_page.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_history_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../statistics/presentation/controllers/statistics_controller.dart';
 
@@ -15,7 +16,7 @@ class ConsultAiView extends ConsumerWidget {
 
     final List<Widget> chatCards = historySessions.isEmpty
       ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No recent AI chats found.', style: TextStyle(color: AppColors.textSecondary)))]
-      : historySessions.map((session) {
+      : historySessions.take(3).map((session) {
           return _buildChatCard(
             title: session.title,
             snippet: session.snippet,
@@ -114,12 +115,22 @@ class ConsultAiView extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
-                'View All',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MedgemmaHistoryPage(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'View All',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],

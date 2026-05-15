@@ -98,6 +98,10 @@ class ConsultationService {
       // Hapus sisa-sisa spasi berlebih
       aiText = aiText.trim();
 
+      // ── Bersihkan duplikasi baris (model looping) ──
+      // Contoh kasus: "Terapi Adjuvant: ..." muncul 8-12 kali berturut-turut.
+      aiText = _removeDuplicateLines(aiText);
+
       print('[ConsultationService] ✅ Parsed AI text (${aiText.length} chars): '
           '${aiText.length > 80 ? '${aiText.substring(0, 80)}...' : aiText}');
 
@@ -141,5 +145,42 @@ class ConsultationService {
           'Unknown error';
     }
     return responseData?.toString() ?? 'Unknown error';
+  }
+
+  /// Hapus baris duplikat yang berurutan – gejala model looping.
+  ///
+  /// Algoritma:
+  ///  1. Split teks per baris.
+  ///  2. Normalisasi setiap baris: hapus nomor urut (1. 2. 3.) dan bullet (* - •)
+  ///     dari awal baris agar perbandingan tidak gagal hanya karena nomor berbeda.
+  ///  3. Jika normalized-nya sama dengan baris sebelumnya (case-insensitive),
+  ///     baris ini dianggap duplikat dan dibuang.
+  String _removeDuplicateLines(String text) {
+    final lines = text.split('\n');
+    final result = <String>[];
+    String? prevNormalized;
+
+    for (final line in lines) {
+      // Normalisasi: hapus leading bullet/number dan whitespace
+      final normalized = line
+          .replaceFirst(RegExp(r'^\s*(\d+\.|[-*•])\s*'), '')
+          .trim()
+          .toLowerCase();
+
+      // Baris kosong selalu dipertahankan (untuk format paragraf)
+      if (normalized.isEmpty) {
+        result.add(line);
+        prevNormalized = null; // reset agar baris berikut tidak dianggap duplikat baris kosong
+        continue;
+      }
+
+      if (normalized != prevNormalized) {
+        result.add(line);
+        prevNormalized = normalized;
+      }
+      // else: baris duplikat, skip
+    }
+
+    return result.join('\n');
   }
 }
