@@ -1,47 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/widgets/custom_search_bar.dart';
 import 'chat_page.dart';
+import '../../../patients/presentation/controllers/patients_controller.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../../core/widgets/creative_medical_loading.dart';
 
-class DoctorChatListPage extends StatefulWidget {
+class DoctorChatListPage extends ConsumerStatefulWidget {
   const DoctorChatListPage({super.key});
 
   @override
-  State<DoctorChatListPage> createState() => _DoctorChatListPageState();
+  ConsumerState<DoctorChatListPage> createState() => _DoctorChatListPageState();
 }
 
-class _DoctorChatListPageState extends State<DoctorChatListPage> {
+class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
   String _searchQuery = '';
+  List<Map<String, dynamic>> _doctors = [];
+  bool _isLoading = true;
 
-  // Mock list of doctors
-  final List<Map<String, dynamic>> _doctors = [
-    {
-      'name': 'Dr. Tirta',
-      'id': 'DOC-222858',
-      'specialty': 'Oncology',
-      'isOnline': true,
-    },
-    {
-      'name': 'Dr. Boyke',
-      'id': 'DOC-506218',
-      'specialty': 'Radiology',
-      'isOnline': true,
-    },
-    {
-      'name': 'Dr. Sarah',
-      'id': 'DOC-503495',
-      'specialty': 'Oncology',
-      'isOnline': false,
-    },
-    {
-      'name': 'Dr. Budi',
-      'id': 'DOC-433580',
-      'specialty': 'Radiology',
-      'isOnline': true,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchDoctors();
+    });
+  }
+
+  Future<void> _fetchDoctors() async {
+    try {
+      final authState = ref.read(authControllerProvider);
+      final userEmail = authState.user?.email;
+      final userId = authState.user?.id;
+
+      Map<String, Map<String, dynamic>> uniqueDoctors = {};
+
+      if (userId != null) {
+        // Coba ambil data pasien secara spesifik dari backend
+        final currentPatient = await ref.read(patientsControllerProvider.notifier).getPatientById(userId);
+        
+        if (currentPatient != null && currentPatient.medicalRecords != null) {
+          for (var record in currentPatient.medicalRecords!) {
+            if (record.doctor != null) {
+              final docId = record.doctor!['id']?.toString() ?? '';
+              if (docId.isNotEmpty && !uniqueDoctors.containsKey(docId)) {
+                uniqueDoctors[docId] = {
+                  'name': record.doctor!['name'] ?? 'Dokter',
+                  'id': docId,
+                  'specialty': 'Spesialis',
+                  'isOnline': record.doctor!['status']?.toString().toLowerCase() == 'active',
+                  'medicalRecordId': record.id ?? '',
+                };
+              }
+            }
+          }
+        }
+      }
+
+      // Fallback jika ambil spesifik tidak berhasil, cari dari list patient
+      if (uniqueDoctors.isEmpty) {
+        await ref.read(patientsControllerProvider.notifier).fetchPatients();
+        final patientsState = ref.read(patientsControllerProvider);
+
+        if (userEmail != null || userId != null) {
+          final currentPatient = patientsState.patients.where((p) => 
+            (userEmail != null && p.email == userEmail) || 
+            (userId != null && p.id == userId)
+          ).firstOrNull;
+
+          if (currentPatient != null && currentPatient.medicalRecords != null) {
+            for (var record in currentPatient.medicalRecords!) {
+              if (record.doctor != null) {
+                final docId = record.doctor!['id']?.toString() ?? '';
+                if (docId.isNotEmpty && !uniqueDoctors.containsKey(docId)) {
+                  uniqueDoctors[docId] = {
+                    'name': record.doctor!['name'] ?? 'Dokter',
+                    'id': docId,
+                    'specialty': 'Spesialis',
+                    'isOnline': record.doctor!['status']?.toString().toLowerCase() == 'active',
+                    'medicalRecordId': record.id ?? '',
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Removed dummy data injection to match real backend data.
+
+      if (mounted) {
+        setState(() {
+          _doctors = uniqueDoctors.values.toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,22 +145,30 @@ class _DoctorChatListPageState extends State<DoctorChatListPage> {
               },
             ),
             Expanded(
-              child: filteredDoctors.isEmpty
-                  ? const Center(child: Text('Tidak ada dokter ditemukan.'))
-                  : ListView.builder(
-                      itemCount: filteredDoctors.length,
-                      itemBuilder: (context, index) {
-                        final doctor = filteredDoctors[index];
-                        return _buildChatListItem(
-                          context,
-                          name: doctor['name'],
-                          id: doctor['id'],
-                          message: 'Ketuk untuk mulai chat',
-                          time: '',
-                          isOnline: doctor['isOnline'],
-                        );
-                      },
-                    ),
+              child: _isLoading
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40.0),
+                        child: CreativeMedicalLoading(text: 'Loading chat list...'),
+                      ),
+                    )
+                  : filteredDoctors.isEmpty
+                      ? const Center(child: Text('Belum ada dokter yang menangani Anda.'))
+                      : ListView.builder(
+                          itemCount: filteredDoctors.length,
+                          itemBuilder: (context, index) {
+                            final doctor = filteredDoctors[index];
+                            return _buildChatListItem(
+                              context,
+                              name: doctor['name'],
+                              id: doctor['id'],
+                              message: 'Ketuk untuk mulai chat',
+                              time: '',
+                              isOnline: doctor['isOnline'] ?? false,
+                              medicalRecordId: doctor['medicalRecordId'] ?? '',
+                            );
+                          },
+                        ),
             ),
           ],
         ),
@@ -112,20 +183,20 @@ class _DoctorChatListPageState extends State<DoctorChatListPage> {
     required String message,
     required String time,
     required bool isOnline,
+    required String medicalRecordId,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          // Navigates to actual chat room. Here we can use ChatPage with empty room ID logic 
-          // or pass the doctor info to initiate the chat.
+          // Navigates to actual chat room.
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ChatPage(
                 doctorId: id,
                 doctorName: name,
-                medicalRecordId: '',
+                medicalRecordId: medicalRecordId,
               ),
             ),
           );
@@ -144,10 +215,16 @@ class _DoctorChatListPageState extends State<DoctorChatListPage> {
                     height: 55,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      color: const Color(0xFFE3F2FD),
                       border: Border.all(color: Colors.blue.shade100, width: 2),
-                      image: const DecorationImage(
-                        image: AssetImage(AppAssets.doctor), // Assuming doctor image is available
-                        fit: BoxFit.cover,
+                    ),
+                    child: ClipOval(
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Image.asset(
+                          AppAssets.doctorProfile,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   ),

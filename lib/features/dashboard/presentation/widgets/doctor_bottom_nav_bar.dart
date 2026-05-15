@@ -13,8 +13,11 @@ class DoctorBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
     return Container(
-      height: 80,
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      height: 80 + bottomPadding,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: const BorderRadius.only(

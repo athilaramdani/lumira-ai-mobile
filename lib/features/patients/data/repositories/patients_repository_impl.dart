@@ -9,9 +9,9 @@ class PatientsRepositoryImpl implements PatientsRepository {
   PatientsRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<PatientModel>> getPatients() async {
+  Future<List<PatientModel>> getPatients({int page = 1, int limit = 100}) async {
     try {
-      return await remoteDataSource.getPatients();
+      return await remoteDataSource.getPatients(page: page, limit: limit);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Failed to load patients');
     } catch (e) {

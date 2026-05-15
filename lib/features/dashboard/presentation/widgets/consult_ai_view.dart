@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_chat_page.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/controllers/medgemma_history_controller.dart';
 import 'package:lumira_ai_mobile/features/chat/presentation/pages/ai_result_interpretation_page.dart';
+import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/pages/medgemma_history_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../statistics/presentation/controllers/statistics_controller.dart';
 
@@ -10,19 +12,22 @@ class ConsultAiView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsState = ref.watch(statisticsControllerProvider);
-    final activities = statsState.activities;
+    final historySessions = ref.watch(medgemmaHistoryProvider);
 
-    final List<Widget> chatCards = activities.isEmpty
-      ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No recent AI chats found.'))]
-      : activities.map((activity) {
+    final List<Widget> chatCards = historySessions.isEmpty
+      ? [const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No recent AI chats found.', style: TextStyle(color: AppColors.textSecondary)))]
+      : historySessions.take(3).map((session) {
           return _buildChatCard(
-            category: activity['status']?.toString().toUpperCase() ?? 'GENERAL INQUIRY',
-            title: activity['title']?.toString() ?? 'AI Consultation',
-            snippet: '"${activity['result'] ?? 'Discussing medical results and AI interpretation.'}"',
-            time: activity['date']?.toString() ?? 'Recent',
+            title: session.title,
+            snippet: session.snippet,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MedgemmaChatPage(sessionId: session.id)),
+              );
+            },
           );
-        }).whereType<Widget>().toList();
+        }).toList();
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -110,12 +115,22 @@ class ConsultAiView extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
-                'View All',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MedgemmaHistoryPage(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'View All',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -148,12 +163,6 @@ class ConsultAiView extends ConsumerWidget {
                   icon: Icons.receipt_long,
                   title: 'Result\nInterpretation',
                   description: 'Decode complex medical reports with clarity',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AiResultInterpretationPage()),
-                    );
-                  },
                 ),
               ),
               const SizedBox(width: 16),
@@ -174,90 +183,60 @@ class ConsultAiView extends ConsumerWidget {
   }
 
   Widget _buildChatCard({
-    required String category,
     required String title,
     required String snippet,
-    required String time,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: IntrinsicHeight(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Blue left border accent
-            Container(
-              width: 4,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    snippet,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          category,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (time.isNotEmpty)
-                          Text(
-                            time,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      snippet,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(width: 16),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.primary,
+              size: 24,
             ),
           ],
         ),
