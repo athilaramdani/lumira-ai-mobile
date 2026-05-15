@@ -66,6 +66,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
   
   // Annotation Tool States
   List<DrawingStroke> _strokes = [];
+  VisualMode _visualMode = VisualMode.raw;
 
   @override
   void initState() {
@@ -201,41 +202,51 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
   }
 
   Widget _buildImageSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _showAnnotationTools(isReadOnly: true),
-              child: MedicalImageCard(
-                label: 'AI RESULT',
-                imagePath: widget.gradCamImage ?? AppAssets.aiGradcam,
-                badgeText: 'AI GradCam',
-                isNetwork: widget.gradCamImage != null,
-              ),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _showAnnotationTools(isReadOnly: false),
-              child: MedicalImageCard(
-                label: 'RAW VIEW',
-                imagePath: widget.rawImage ?? AppAssets.rawPixels,
-                isNetwork: widget.rawImage != null,
-                overlay: CustomPaint(
-                  size: Size.infinite,
-                  painter: DrawingPainter(
-                    strokes: _strokes,
-                    currentStroke: null,
+    return Column(
+      children: [
+        ReviewControls(
+          visualMode: _visualMode,
+          onVisualModeChanged: (mode) => setState(() => _visualMode = mode),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _showAnnotationTools(isReadOnly: true),
+                  child: MedicalImageCard(
+                    label: 'AI RESULT',
+                    imagePath: widget.gradCamImage ?? AppAssets.aiGradcam,
+                    badgeText: 'AI GradCam',
+                    isNetwork: widget.gradCamImage != null,
                   ),
                 ),
               ),
-            ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _showAnnotationTools(isReadOnly: false),
+                  child: MedicalImageCard(
+                    label: 'RAW VIEW',
+                    imagePath: widget.rawImage ?? AppAssets.rawPixels,
+                    isNetwork: widget.rawImage != null,
+                    isNormalized: _visualMode == VisualMode.normalized,
+                    overlay: CustomPaint(
+                      size: Size.infinite,
+                      painter: DrawingPainter(
+                        strokes: _strokes,
+                        currentStroke: null,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -469,7 +480,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                         child: FittedBox(
                           fit: BoxFit.cover,
                           child: SizedBox(
-                            width: 342, // Approximate width of original canvas
+                            width: 400, // Match the original canvas 400x400
                             height: 400, // Approximate height of original canvas
                             child: Stack(
                               children: [

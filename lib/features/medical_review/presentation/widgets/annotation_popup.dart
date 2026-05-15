@@ -5,17 +5,17 @@ import '../../domain/models/drawing_stroke.dart';
 import 'drawing_painter.dart';
 
 // ─── Colour palette (matches spec) ────────────────────────────────────────────
-const _kColorLow     = Color(0xFF00FF00); // Low      / normal     – Green
-const _kColorMedium  = Color(0xFFFFC107); // Medium   / benign     – Amber
-const _kColorHigh    = Color(0xFFFF0000); // High     / malignant  – Red
-const _kColorNormal  = Color(0xFF0099FF); // Normal   / nocancer   – Light Blue
-const _kColorWhite   = Color(0xFFFFFFFF); // White    / white      – White
+const _kColorLow = Color(0xFF00FF00); // Low      / normal     – Green
+const _kColorMedium = Color(0xFFFFC107); // Medium   / benign     – Amber
+const _kColorHigh = Color(0xFFFF0000); // High     / malignant  – Red
+const _kColorNormal = Color(0xFF0099FF); // Normal   / nocancer   – Light Blue
+const _kColorWhite = Color(0xFFFFFFFF); // White    / white      – White
 
 class AnnotationPopup extends StatefulWidget {
-  final String imagePath;    // gradcam URL or fallback asset
+  final String imagePath; // gradcam URL or fallback asset
   final String? rawImagePath; // raw backend image (used for normalized view)
   final bool isNetwork;
-  final bool isRawNetwork;    // whether rawImagePath is a network URL
+  final bool isRawNetwork; // whether rawImagePath is a network URL
   final bool isReadOnly;
   final List<DrawingStroke> initialStrokes;
   final ValueChanged<List<DrawingStroke>> onSave;
@@ -43,13 +43,14 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
 
   // Drawing options
   Color _activeColor = _kColorLow;
-  double _brushSize  = 5.0;
+  double _brushSize = 5.0;
   double _brushOpacity = 1.0;
-  bool _isEraser   = false;
+  bool _isEraser = false;
   bool _isNormalized = false;
 
   // Zoom / pan
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
   static const double _minScale = 1.0;
   static const double _maxScale = 5.0;
 
@@ -71,8 +72,8 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
   // ─── Zoom helpers ─────────────────────────────────────────────────────────
   void _zoomIn() {
     final current = _transformationController.value.getMaxScaleOnAxis();
-    final next    = (current * 1.3).clamp(_minScale, _maxScale);
-    final center  = Offset(
+    final next = (current * 1.3).clamp(_minScale, _maxScale);
+    final center = Offset(
       MediaQuery.of(context).size.width / 2,
       300 / 2,
     );
@@ -83,7 +84,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
 
   void _zoomOut() {
     final current = _transformationController.value.getMaxScaleOnAxis();
-    final next    = (current / 1.3).clamp(_minScale, _maxScale);
+    final next = (current / 1.3).clamp(_minScale, _maxScale);
     if (next <= _minScale) {
       _transformationController.value = Matrix4.identity();
     } else {
@@ -108,9 +109,9 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
       height: MediaQuery.of(context).size.height * 0.93,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
       decoration: const BoxDecoration(
-        color: Colors.white, 
+        color: Colors.white,
         borderRadius: BorderRadius.only(
-          topLeft:  Radius.circular(24),
+          topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
       ),
@@ -132,9 +133,9 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
               ),
               const Spacer(),
               // Zoom buttons
-              _zoomIconBtn(Icons.zoom_in,  _zoomIn,   'Zoom In'),
+              _zoomIconBtn(Icons.zoom_in, _zoomIn, 'Zoom In'),
               const SizedBox(width: 4),
-              _zoomIconBtn(Icons.zoom_out, _zoomOut,  'Zoom Out'),
+              _zoomIconBtn(Icons.zoom_out, _zoomOut, 'Zoom Out'),
               const SizedBox(width: 4),
               _zoomIconBtn(Icons.fit_screen, _resetZoom, 'Reset'),
               const SizedBox(width: 4),
@@ -170,7 +171,8 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
               _getBrushSizeLabel(_brushSize),
               _brushSize,
               (val) => setState(() => _brushSize = val),
-              min: 1.0, max: 20.0,
+              min: 1.0,
+              max: 20.0,
             ),
             const SizedBox(height: 8),
             _buildSliderControl(
@@ -179,7 +181,8 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
               '${(_brushOpacity * 100).toInt()}%',
               _brushOpacity,
               (val) => setState(() => _brushOpacity = val),
-              min: 0.1, max: 1.0,
+              min: 0.1,
+              max: 1.0,
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -196,7 +199,10 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
                 ),
                 child: const Text(
                   'Save Annotations',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
               ),
             ),
@@ -231,45 +237,54 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
     }
 
     // Drawing canvas view
-    return GestureDetector(
-      onPanStart: (details) {
-        setState(() {
-          _currentStroke = DrawingStroke(
-            points:      [details.localPosition],
-            color:       _activeColor,
-            strokeWidth: _brushSize,
-            opacity:     _brushOpacity,
-            isEraser:    _isEraser,
-          );
-        });
-      },
-      onPanUpdate: (details) {
-        setState(() {
-          _currentStroke?.points.add(details.localPosition);
-        });
-      },
-      onPanEnd: (_) {
-        setState(() {
-          if (_currentStroke != null) {
-            _strokes.add(_currentStroke!);
-            _currentStroke = null;
-          }
-        });
-      },
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Base image (raw or normalized)
-          _buildBaseImage(),
-          // Drawing layer
-          CustomPaint(
-            size: Size.infinite,
-            painter: DrawingPainter(
-              strokes:       _strokes,
-              currentStroke: _currentStroke,
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: 400,
+          height: 400,
+          child: GestureDetector(
+            onPanStart: (details) {
+              setState(() {
+                _currentStroke = DrawingStroke(
+                  points: [details.localPosition],
+                  color: _activeColor,
+                  strokeWidth: _brushSize,
+                  opacity: _brushOpacity,
+                  isEraser: _isEraser,
+                );
+              });
+            },
+            onPanUpdate: (details) {
+              setState(() {
+                _currentStroke?.points.add(details.localPosition);
+              });
+            },
+            onPanEnd: (_) {
+              setState(() {
+                if (_currentStroke != null) {
+                  _strokes.add(_currentStroke!);
+                  _currentStroke = null;
+                }
+              });
+            },
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Base image (raw or normalized)
+                _buildBaseImage(),
+                // Drawing layer
+                CustomPaint(
+                  size: Size.infinite,
+                  painter: DrawingPainter(
+                    strokes: _strokes,
+                    currentStroke: _currentStroke,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -280,9 +295,9 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
       children: [
         // Raw image beneath heatmap
         if (widget.isNetwork)
-          Image.network(widget.imagePath, fit: BoxFit.contain)
+          Image.network(widget.imagePath, fit: BoxFit.cover)
         else
-          Image.asset(widget.imagePath, fit: BoxFit.contain),
+          Image.asset(widget.imagePath, fit: BoxFit.cover),
 
         // GradCAM heatmap overlay with simulated CSS effects:
         // blur(8px) → ImageFiltered with sigma=8
@@ -295,21 +310,21 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
             child: ColorFiltered(
               colorFilter: const ColorFilter.matrix(<double>[
                 // contrast(1.2) matrix
-                1.2, 0,   0,   0, -0.1 * 255,
-                0,   1.2, 0,   0, -0.1 * 255,
-                0,   0,   1.2, 0, -0.1 * 255,
-                0,   0,   0,   1, 0,
+                1.2, 0, 0, 0, -0.1 * 255,
+                0, 1.2, 0, 0, -0.1 * 255,
+                0, 0, 1.2, 0, -0.1 * 255,
+                0, 0, 0, 1, 0,
               ]),
               child: widget.isNetwork
                   ? Image.network(
                       widget.imagePath,
-                      fit: BoxFit.contain,
+                      fit: BoxFit.cover,
                       color: Colors.transparent,
                       colorBlendMode: BlendMode.hardLight,
                     )
                   : Image.asset(
                       widget.imagePath,
-                      fit: BoxFit.contain,
+                      fit: BoxFit.cover,
                       color: Colors.transparent,
                       colorBlendMode: BlendMode.hardLight,
                     ),
@@ -323,30 +338,31 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
   Widget _buildBaseImage() {
     if (_isNormalized) {
       // Apply normalized effect to the actual raw backend image
-      final hasRaw = widget.rawImagePath != null && widget.rawImagePath!.isNotEmpty;
-      final isNet  = widget.isRawNetwork;
+      final hasRaw =
+          widget.rawImagePath != null && widget.rawImagePath!.isNotEmpty;
+      final isNet = widget.isRawNetwork;
       return ColorFiltered(
         colorFilter: const ColorFilter.matrix(<double>[
           // greyscale + contrast boost (simulates medical normalized view)
           0.33, 0.59, 0.11, 0, 0,
           0.33, 0.59, 0.11, 0, 0,
           0.33, 0.59, 0.11, 0, 0,
-          0,    0,    0,    1, 0,
+          0, 0, 0, 1, 0,
         ]),
         child: hasRaw
             ? (isNet
-                ? Image.network(widget.rawImagePath!, fit: BoxFit.contain)
-                : Image.asset(widget.rawImagePath!, fit: BoxFit.contain))
+                ? Image.network(widget.rawImagePath!, fit: BoxFit.cover)
+                : Image.asset(widget.rawImagePath!, fit: BoxFit.cover))
             : (widget.isNetwork
-                ? Image.network(widget.imagePath, fit: BoxFit.contain)
-                : Image.asset(widget.imagePath, fit: BoxFit.contain)),
+                ? Image.network(widget.imagePath, fit: BoxFit.cover)
+                : Image.asset(widget.imagePath, fit: BoxFit.cover)),
       );
     }
 
     if (widget.isNetwork) {
-      return Image.network(widget.imagePath, fit: BoxFit.contain);
+      return Image.network(widget.imagePath, fit: BoxFit.cover);
     }
-    return Image.asset(widget.imagePath, fit: BoxFit.contain);
+    return Image.asset(widget.imagePath, fit: BoxFit.cover);
   }
 
   // ─── GradCAM opacity slider ───────────────────────────────────────────────
@@ -359,27 +375,33 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
           children: [
             const Text(
               'GradCAM Intensity:',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black54),
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54),
             ),
             Text(
               '${(_gradcamOpacity * 100).toInt()}%',
-              style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 4.0,
-            thumbShape:  const RoundSliderThumbShape(enabledThumbRadius: 8.0),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0),
-            activeTrackColor:   AppColors.primary.withOpacity(0.8),
+            activeTrackColor: AppColors.primary.withOpacity(0.8),
             inactiveTrackColor: Colors.grey.shade200,
-            thumbColor:         AppColors.primary,
+            thumbColor: AppColors.primary,
           ),
           child: Slider(
-            value:     _gradcamOpacity,
-            min:       0.0,
-            max:       1.0,
+            value: _gradcamOpacity,
+            min: 0.0,
+            max: 1.0,
             onChanged: (val) => setState(() => _gradcamOpacity = val),
           ),
         ),
@@ -397,17 +419,23 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
           children: [
             const Text(
               'Focus Area:',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary),
             ),
             Row(
               children: [
-                const Text('Raw',        style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                const Text('Raw',
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary)),
                 Switch(
-                  value:     _isNormalized,
+                  value: _isNormalized,
                   onChanged: (val) => setState(() => _isNormalized = val),
                   activeColor: AppColors.primary,
                 ),
-                const Text('Normalized', style: TextStyle(fontSize: 12, color: Colors.white60)),
+                const Text('Normalized',
+                    style: TextStyle(fontSize: 12, color: Colors.white60)),
               ],
             ),
           ],
@@ -417,17 +445,17 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _buildFocusChip('Low',    _kColorLow,    label2: 'normal'),
+            _buildFocusChip('Low', _kColorLow, label2: 'normal'),
             _buildFocusChip('Medium', _kColorMedium, label2: 'benign'),
-            _buildFocusChip('High',   _kColorHigh,   label2: 'malignant'),
+            _buildFocusChip('High', _kColorHigh, label2: 'malignant'),
             _buildFocusChip('Normal', _kColorNormal, label2: 'nocancer'),
-            _buildFocusChip('White',  _kColorWhite,  label2: 'white',
-                displayColor: _kColorWhite, withBorder: true),
+            _buildFocusChip('White', _kColorWhite,
+                label2: 'white', displayColor: _kColorWhite, withBorder: true),
             // Eraser
             GestureDetector(
               onTap: () => setState(() => _isEraser = true),
               child: _toolChip(
-                icon:  Icons.layers_clear,
+                icon: Icons.layers_clear,
                 label: 'Erase',
                 active: _isEraser,
               ),
@@ -457,7 +485,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
     final isSelected = !_isEraser && _activeColor.value == color.value;
     return GestureDetector(
       onTap: () => setState(() {
-        _isEraser    = false;
+        _isEraser = false;
         _activeColor = color;
       }),
       child: Container(
@@ -474,11 +502,13 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 10, height: 10,
+              width: 10,
+              height: 10,
               decoration: BoxDecoration(
                 color: displayColor ?? color,
                 shape: BoxShape.circle,
-                border: withBorder ? Border.all(color: Colors.grey.shade400) : null,
+                border:
+                    withBorder ? Border.all(color: Colors.grey.shade400) : null,
               ),
             ),
             const SizedBox(width: 5),
@@ -490,7 +520,8 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
                   label,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     color: isSelected ? color : Colors.black87,
                   ),
                 ),
@@ -507,20 +538,24 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
     );
   }
 
-  Widget _toolChip({required IconData icon, required String label, required bool active}) {
+  Widget _toolChip(
+      {required IconData icon, required String label, required bool active}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color:  active ? Colors.grey.shade200 : Colors.grey.shade100,
+        color: active ? Colors.grey.shade200 : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: active ? Colors.grey.shade400 : Colors.grey.shade300, width: active ? 2 : 1),
+        border: Border.all(
+            color: active ? Colors.grey.shade400 : Colors.grey.shade300,
+            width: active ? 2 : 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: Colors.black54),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+          Text(label,
+              style: const TextStyle(fontSize: 12, color: Colors.black87)),
         ],
       ),
     );
@@ -542,18 +577,26 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title,     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black54)),
-            Text(valueText, style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.w600)),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black54)),
+            Text(valueText,
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600)),
           ],
         ),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 4.0,
-            thumbShape:  const RoundSliderThumbShape(enabledThumbRadius: 8.0),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0),
-            activeTrackColor:   AppColors.primary.withOpacity(0.7),
+            activeTrackColor: AppColors.primary.withOpacity(0.7),
             inactiveTrackColor: Colors.grey.shade200,
-            thumbColor:         AppColors.primary,
+            thumbColor: AppColors.primary,
           ),
           child: Slider(value: value, min: min, max: max, onChanged: onChanged),
         ),
@@ -581,7 +624,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
   }
 
   String _getBrushSizeLabel(double size) {
-    if (size < 5)  return 'Small';
+    if (size < 5) return 'Small';
     if (size < 12) return 'Medium';
     return 'Large';
   }
