@@ -111,15 +111,16 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final room = filtered[index];
-                        final patientName = room['counterpartName'] ?? 'Unknown';
-                        final patientId = room['patientId'] ?? '';
+                        final counterpartName = room['counterpartName'] ?? 'Unknown';
+                        // counterpartId is the other person's ID (doctor ID for patient, patient ID for doctor)
+                        final counterpartId = room['counterpartId'] ?? '';
                         final medicalRecordId = room['medicalRecordId'] ?? '';
                         final lastMessage = room['lastMessage'] as String?;
 
                         return _buildChatListItem(
                           context,
-                          name: patientName,
-                          id: patientId,
+                          name: counterpartName,
+                          id: counterpartId,
                           medicalRecordId: medicalRecordId,
                           message: lastMessage ?? 'Ketuk untuk mulai chat',
                           imagePath: counterpartImage,
