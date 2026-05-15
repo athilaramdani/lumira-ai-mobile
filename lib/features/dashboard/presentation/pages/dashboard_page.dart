@@ -10,7 +10,7 @@ import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/custom_
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/consult_ai_view.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/history_view.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_view.dart';
-import 'package:lumira_ai_mobile/features/chat/presentation/pages/doctor_chat_list_page.dart';
+import 'package:lumira_ai_mobile/features/chat/presentation/pages/chat_list_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../patients/presentation/controllers/patients_controller.dart';
@@ -40,7 +40,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         },
       ),
       body: _currentNavIndex == 2
-          ? const DoctorChatListPage()
+          ? const ChatListPage(showBackButton: false)
           : SingleChildScrollView(
               child: Column(
                 children: [
@@ -161,14 +161,34 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               }
             }
 
+            // Normalize data for ScanCard
+            String normalizedLabel = record.resultLabel ?? 'Unknown';
+            String confidenceStr = '-';
+
+            normalizedLabel = normalizedLabel
+                .replaceAll('_', ' ')
+                .split(' ')
+                .map((s) => s.isEmpty ? '' : s[0].toUpperCase() + s.substring(1))
+                .join(' ');
+            
+            if (record.resultConfidence != null) {
+              final confVal = record.resultConfidence!;
+              final pct = confVal > 1 ? confVal : confVal * 100;
+              confidenceStr = '${pct.toStringAsFixed(2)}%';
+            }
+
             return ScanCard(
               scanId: recordId,
               status: scanStatus,
-              result: record.resultLabel,
+              result: normalizedLabel,
               doctorName: doctorName,
               doctorId: doctorId,
               verifiedDate: record.createdAt,
               isPatientView: true,
+              patientName: patient?.name,
+              imagePath: record.gradcamImageUrl ?? record.imageUrl,
+              confidenceScore: confidenceStr,
+              noteText: record.doctorNotes,
             );
           }).whereType<Widget>().toList();
         }
