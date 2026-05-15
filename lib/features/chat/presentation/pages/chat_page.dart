@@ -157,7 +157,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF22C55E).withValues(alpha: 0.1),
+                color: const Color(0xFF22C55E).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Row(
@@ -247,7 +247,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 5,
               offset: const Offset(0, 2),
             ),
@@ -309,7 +309,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),

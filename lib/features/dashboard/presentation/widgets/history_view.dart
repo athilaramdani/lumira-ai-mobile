@@ -386,7 +386,7 @@ class HistoryView extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF40B4FF).withValues(alpha: 0.3),
+              color: const Color(0xFF40B4FF).withOpacity(0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -399,8 +399,8 @@ class HistoryView extends ConsumerWidget {
               height: 52,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.2),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                color: Colors.white.withOpacity(0.2),
+                border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
               ),
               child: const Icon(Icons.person, color: Colors.white, size: 28),
             ),
@@ -434,7 +434,7 @@ class HistoryView extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.chat, color: Colors.white, size: 20),
