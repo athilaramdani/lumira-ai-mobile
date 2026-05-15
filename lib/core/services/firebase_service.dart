@@ -31,7 +31,7 @@ class FirebaseService {
     try {
       const androidInit = AndroidInitializationSettings('ic_launcher');
       const initSettings = InitializationSettings(android: androidInit);
-      await _localNotifications.initialize(settings: initSettings);
+      await _localNotifications.initialize(initSettings);
 
       // Explicitly request Android 13+ notification permissions
       if (Platform.isAndroid) {
@@ -61,10 +61,10 @@ class FirebaseService {
     const details = NotificationDetails(android: androidDetails);
     
     _localNotifications.show(
-      id: message.messageId?.hashCode ?? DateTime.now().millisecond,
-      title: title,
-      body: body,
-      notificationDetails: details,
+      message.messageId?.hashCode ?? DateTime.now().millisecond,
+      title,
+      body,
+      details,
     );
   }
 
