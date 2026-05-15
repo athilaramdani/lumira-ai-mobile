@@ -8,6 +8,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../domain/entities/chat_message.dart';
 import '../controllers/chat_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../../core/widgets/creative_medical_loading.dart';
 
 /// Patient-side chat page.
 /// The family param for chatControllerProvider is the patient's own user ID.
@@ -80,7 +81,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
     if (myId.isEmpty || _medicalRecordId.isEmpty) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(40.0),
+            child: CreativeMedicalLoading(text: 'Preparing chat...'),
+          ),
+        ),
       );
     }
 
@@ -114,8 +120,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFF40B4FF).withValues(alpha: 0.15),
-                backgroundImage: const AssetImage(AppAssets.doctor),
+                backgroundColor: const Color(0xFFE3F2FD),
+                child: Padding(
+                  padding: const EdgeInsets.all(2.0),
+                  child: Image.asset(
+                    AppAssets.doctorProfile,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Column(
@@ -177,7 +189,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               child: Container(
                 color: const Color(0xFFF8FAFC),
                 child: chatState.isLoading && chatState.messages.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: CreativeMedicalLoading(text: 'Loading messages...'),
+                      )
                     : chatState.messages.isEmpty
                         ? Center(
                             child: Column(
