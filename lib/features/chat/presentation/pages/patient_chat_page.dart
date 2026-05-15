@@ -181,8 +181,18 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
                           ),
               ),
             ),
-            _buildActionButtons(),
-            _buildInputArea(),
+            SafeArea(
+              top: false,
+              left: false,
+              right: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildActionButtons(),
+                  _buildInputArea(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -438,13 +448,8 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
 
     return Container(
       color: Colors.white,
-      child: SafeArea(
-        top: false,
-        left: false,
-        right: false,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 8),
-          child: Row(
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12, top: 8),
+      child: Row(
         children: [
           Expanded(
             child: Container(
@@ -485,8 +490,6 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
             ),
           ),
         ],
-      ),
-        ),
       ),
     );
   }
