@@ -170,12 +170,9 @@ class ScanCard extends StatelessWidget {
                                   border: Border.all(color: Colors.blue.shade100, width: 1),
                                 ),
                                 child: ClipOval(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(2.0),
-                                    child: Image.asset(
-                                      AppAssets.doctorProfile,
-                                      fit: BoxFit.contain,
-                                    ),
+                                  child: Image.asset(
+                                    AppAssets.doctor,
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
                               ),

@@ -10,7 +10,6 @@ import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_display_field.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_setting_row.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_logout_button.dart';
-import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/edit_profile_page.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/logout_dialog.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,10 +56,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
     final name = user?.name ?? 'Unknown';
     final email = user?.email ?? '-';
     final phone = user?.phone ?? '-';
-    final dob = user?.dateOfBirth ?? '-';
     final address = user?.address ?? '-';
-    final city = user?.city ?? '-';
-    final postalCode = user?.postalCode ?? '-';
 
     return Column(
       children: [
@@ -68,13 +64,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
           patientId: id,
           patientName: name,
           imageUrl: user?.imageUrl,
-          imagePath: user?.role == 'doctor' ? AppAssets.doctorProfile : AppAssets.patientProfile,
-          onEditTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const EditProfilePage()),
-            );
-          },
+          imagePath: user?.role == 'doctor' ? AppAssets.doctor : AppAssets.dummyProfile,
         ),
         
         const SizedBox(height: 10),
@@ -91,48 +81,27 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
               ProfileInfoRow(
                 label: 'Phone',
                 value: phone,
-              ),
-              ProfileInfoRow(
-                label: 'Date of Birth',
-                value: dob,
                 showDivider: false,
               ),
             ],
           ),
         ),
         
-        ProfileSectionCard(
-          headerIcon: Icons.account_circle_outlined,
-          headerTitle: 'Account Address',
-          child: Column(
-            children: [
-              ProfileDisplayField(
-                label: '',
-                value: address,
-                isMultiLine: true,
-                showLabel: false,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ProfileDisplayField(
-                      label: 'CITY',
-                      value: city,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ProfileDisplayField(
-                      label: 'POSTAL CODE',
-                      value: postalCode,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        if (user?.address != null)
+          ProfileSectionCard(
+            headerIcon: Icons.account_circle_outlined,
+            headerTitle: 'Account Address',
+            child: Column(
+              children: [
+                ProfileDisplayField(
+                  label: '',
+                  value: address,
+                  isMultiLine: true,
+                  showLabel: false,
+                ),
+              ],
+            ),
           ),
-        ),
         
         ProfileSectionCard(
           headerIcon: Icons.tune,
