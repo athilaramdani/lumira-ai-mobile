@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
+import 'package:lumira_ai_mobile/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:lumira_ai_mobile/features/dashboard/presentation/pages/doctor_dashboard_page.dart';
 import 'package:lumira_ai_mobile/features/landing/landing_page.dart';
 import 'package:lumira_ai_mobile/core/services/firebase_service.dart';
 
@@ -22,7 +25,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   FirebaseService.showLocalNotification(message);
 }
 
-final GlobalKey<ScaffoldMessengerState> globalMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<ScaffoldMessengerState> globalMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +59,12 @@ class MyApp extends StatelessWidget {
       scaffoldMessengerKey: globalMessengerKey,
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
-        dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch, PointerDeviceKind.stylus, PointerDeviceKind.unknown},
+        dragDevices: {
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.touch,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.unknown
+        },
       ),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
@@ -63,7 +72,35 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Inter',
       ),
-      home: const LandingPage(),
+      home: const AuthGate(),
     );
+  }
+}
+
+class AuthGate extends ConsumerWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+
+    if (authState.isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (authState.token == null) {
+      return const LandingPage();
+    }
+
+    final role = authState.user?.role?.toLowerCase();
+    if (role == 'patient') {
+      return const DashboardPage();
+    }
+
+    return const DoctorDashboardPage();
   }
 }
