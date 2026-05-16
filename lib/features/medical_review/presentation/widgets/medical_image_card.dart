@@ -32,7 +32,7 @@ class MedicalImageCard extends StatelessWidget {
             fit: BoxFit.cover,
           );
 
-    if (!isNormalized) {
+    if (isNormalized) {
       imageWidget = ImageFiltered(
         imageFilter: ui.ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
         child: imageWidget,
