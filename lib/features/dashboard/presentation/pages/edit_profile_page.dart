@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/features/auth/data/models/user_model.dart';
@@ -18,6 +19,7 @@ class EditProfilePage extends ConsumerStatefulWidget {
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late UserModel _localUser;
 
+
   @override
   void initState() {
     super.initState();
@@ -27,7 +29,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     } else {
       _localUser = UserModel(id: 'PAS-859317', name: 'Test Patient');
     }
+
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -40,14 +45,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               patientId: _localUser.id ?? 'Unknown ID',
               patientName: _localUser.name ?? 'Unknown',
               imageUrl: _localUser.imageUrl,
-              editIcon: Icons.camera_alt,
-              onEditTap: () {
-                _showImageEditDialog(context);
-              },
             ),
-            
+
             const SizedBox(height: 10),
-            
+
             ProfileSectionCard(
               headerIcon: Icons.person_outline,
               headerTitle: 'Personal Details',
@@ -68,18 +69,73 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   ProfileTextField(
                     label: 'Phone Number',
                     initialValue: _localUser.phone ?? '',
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    helperText: '* Input harus berupa angka',
                     onChanged: (val) => _localUser = _localUser.copyWith(phone: val),
                   ),
                   const SizedBox(height: 16),
                   ProfileTextField(
-                    label: 'Date of Birth',
-                    initialValue: _localUser.dateOfBirth ?? '',
-                    onChanged: (val) => _localUser = _localUser.copyWith(dateOfBirth: val),
+                    key: ValueKey(_localUser.dateOfBirth),
+                    label: 'DATE OF BIRTH',
+                    initialValue: () {
+                      final dob = _localUser.dateOfBirth ?? '';
+                      if (dob.isEmpty) return '';
+                      final parts = dob.split(RegExp(r'[-/]'));
+                      if (parts.length == 3 && parts[0].length == 4) {
+                        return '${parts[2]}-${parts[1]}-${parts[0]}';
+                      }
+                      return dob;
+                    }(),
+                    hintText: 'DD-MM-YYYY',
+                    readOnly: true,
+                    onTap: () async {
+                      final now = DateTime.now();
+                      DateTime initialDate = now;
+                      if (_localUser.dateOfBirth != null && _localUser.dateOfBirth!.isNotEmpty) {
+                        final parts = _localUser.dateOfBirth!.split(RegExp(r'[-/]'));
+                        if (parts.length == 3) {
+                          try {
+                            if (parts[0].length == 4) {
+                              initialDate = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+                            } else {
+                              initialDate = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+                            }
+                          } catch (e) {
+                            // ignore and use now
+                          }
+                        }
+                      }
+                      final selectedDate = await showDatePicker(
+                        context: context,
+                        initialDate: initialDate,
+                        firstDate: DateTime(1900),
+                        lastDate: now,
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: AppColors.primary,
+                                onPrimary: Colors.white,
+                                onSurface: AppColors.textPrimary,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (selectedDate != null) {
+                        setState(() {
+                          final formattedDate = '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
+                          _localUser = _localUser.copyWith(dateOfBirth: formattedDate);
+                        });
+                      }
+                    },
                   ),
                 ],
               ),
             ),
-            
+
             ProfileSectionCard(
               headerIcon: Icons.account_circle_outlined,
               headerTitle: 'Account Address',
@@ -106,6 +162,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                         child: ProfileTextField(
                           label: 'POSTAL CODE',
                           initialValue: _localUser.postalCode ?? '',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          helperText: '* Input harus berupa angka',
                           onChanged: (val) => _localUser = _localUser.copyWith(postalCode: val),
                         ),
                       ),
@@ -114,7 +173,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 ],
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
@@ -122,20 +181,34 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Update the provider with the new data
-                        ref.read(authControllerProvider.notifier).updateProfileLocally(_localUser);
-                        
-                        showDialog<bool>(
-                          context: context,
-                          builder: (context) => const SaveChangesDialog(),
-                        ).then((saved) {
-                          if (saved == true) {
-                            if (context.mounted) {
-                              Navigator.pop(context); // Go back to profile page after save
+                      onPressed: () async {
+                        final success = await ref
+                            .read(authControllerProvider.notifier)
+                            .updateProfile(_localUser);
+
+                        if (success && context.mounted) {
+                          showDialog<bool>(
+                            context: context,
+                            builder: (context) => const SaveChangesDialog(),
+                          ).then((saved) {
+                            if (saved == true) {
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
                             }
-                          }
-                        });
+                          });
+                        } else if (context.mounted) {
+                          final error = ref.read(authControllerProvider).error;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                error ?? 'Gagal memperbarui profil. Silakan coba lagi.',
+                              ),
+                              backgroundColor: Colors.red.shade700,
+                              duration: const Duration(seconds: 4),
+                            ),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -183,43 +256,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 30),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showImageEditDialog(BuildContext context) {
-    final TextEditingController urlController = TextEditingController(text: _localUser.imageUrl ?? '');
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile Photo'),
-        content: TextField(
-          controller: urlController,
-          decoration: const InputDecoration(
-            labelText: 'Image URL',
-            hintText: 'https://...',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _localUser = _localUser.copyWith(imageUrl: urlController.text.trim());
-              });
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
