@@ -219,12 +219,9 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
                       border: Border.all(color: Colors.blue.shade100, width: 2),
                     ),
                     child: ClipOval(
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Image.asset(
-                          AppAssets.doctorProfile,
-                          fit: BoxFit.contain,
-                        ),
+                      child: Image.asset(
+                        AppAssets.doctor,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),

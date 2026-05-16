@@ -118,16 +118,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           titleSpacing: 0,
           title: Row(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFFE3F2FD),
-                child: Padding(
-                  padding: const EdgeInsets.all(2.0),
-                  child: Image.asset(
-                    AppAssets.doctorProfile,
-                    fit: BoxFit.contain,
-                  ),
-                ),
+                backgroundColor: Color(0xFFE3F2FD),
+                backgroundImage: AssetImage(AppAssets.doctor),
               ),
               const SizedBox(width: 12),
               Column(
