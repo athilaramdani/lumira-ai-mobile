@@ -115,16 +115,25 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
                         // counterpartId is the other person's ID (doctor ID for patient, patient ID for doctor)
                         final counterpartId = room['counterpartId'] ?? '';
                         final medicalRecordId = room['medicalRecordId'] ?? '';
-                        final lastMessage = room['lastMessage'] as String?;
+                        // roomId from API (field name may be 'id' or 'roomId')
+                        final roomId = (room['id'] ?? room['roomId'] ?? '').toString();
 
-                        return _buildChatListItem(
-                          context,
-                          name: counterpartName,
-                          id: counterpartId,
-                          medicalRecordId: medicalRecordId,
-                          message: lastMessage ?? 'Ketuk untuk mulai chat',
-                          imagePath: counterpartImage,
-                          isPatientRole: isPatientRole,
+                        return Consumer(
+                          builder: (context, consumerRef, _) {
+                            final lastMessage = roomId.isNotEmpty
+                                ? consumerRef.watch(lastMessageProvider(roomId)).valueOrNull
+                                : null;
+
+                            return _buildChatListItem(
+                              context,
+                              name: counterpartName,
+                              id: counterpartId,
+                              medicalRecordId: medicalRecordId,
+                              message: lastMessage ?? 'Ketuk untuk mulai chat',
+                              imagePath: counterpartImage,
+                              isPatientRole: isPatientRole,
+                            );
+                          },
                         );
                       },
                     );

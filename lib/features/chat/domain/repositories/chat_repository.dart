@@ -25,4 +25,7 @@ abstract class ChatRepository {
 
   /// Gets the list of rooms for the authenticated actor.
   Future<List<dynamic>> getRooms();
+
+  /// Streams the last message text for a given Firestore room.
+  Stream<String?> getLastMessage(String roomId);
 }
