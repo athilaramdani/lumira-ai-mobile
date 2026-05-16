@@ -12,10 +12,14 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthService(); // Ideally AuthRepositoryImpl
 });
 
-final loginUseCaseProvider = Provider<LoginUseCase>((ref) => LoginUseCase(ref.watch(authRepositoryProvider)));
-final getMeUseCaseProvider = Provider<GetMeUseCase>((ref) => GetMeUseCase(ref.watch(authRepositoryProvider)));
-final logoutUseCaseProvider = Provider<LogoutUseCase>((ref) => LogoutUseCase(ref.watch(authRepositoryProvider)));
-final updateProfileUseCaseProvider = Provider<UpdateProfileUseCase>((ref) => UpdateProfileUseCase(ref.watch(authRepositoryProvider)));
+final loginUseCaseProvider = Provider<LoginUseCase>(
+    (ref) => LoginUseCase(ref.watch(authRepositoryProvider)));
+final getMeUseCaseProvider = Provider<GetMeUseCase>(
+    (ref) => GetMeUseCase(ref.watch(authRepositoryProvider)));
+final logoutUseCaseProvider = Provider<LogoutUseCase>(
+    (ref) => LogoutUseCase(ref.watch(authRepositoryProvider)));
+final updateProfileUseCaseProvider = Provider<UpdateProfileUseCase>(
+    (ref) => UpdateProfileUseCase(ref.watch(authRepositoryProvider)));
 
 /// State untuk AuthController
 class AuthState {
@@ -66,23 +70,53 @@ class AuthController extends StateNotifier<AuthState> {
         _getMeUseCase = getMeUseCase,
         _logoutUseCase = logoutUseCase,
         _updateProfileUseCase = updateProfileUseCase,
-        super(AuthState()) {
+        super(AuthState(isLoading: true)) {
     _init();
+  }
+
+  UserModel? _buildCachedUser(SharedPreferences prefs) {
+    final cachedUser = UserModel(
+      id: prefs.getString('user_id'),
+      name: prefs.getString('user_name'),
+      email: prefs.getString('user_email'),
+      role: prefs.getString('user_role'),
+    );
+
+    if (cachedUser.id == null &&
+        cachedUser.name == null &&
+        cachedUser.email == null &&
+        cachedUser.role == null) {
+      return null;
+    }
+
+    return cachedUser;
   }
 
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
-    if (token != null) {
-      state = state.copyWith(token: token);
-      fetchMe().then((_) async {
-        // Register token on fresh app start if already logged in AND notifications are enabled
-        final notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-        if (notificationsEnabled) {
-          await FirebaseService.registerDeviceToken(ApiClient().dio);
-        }
-      });
+    if (token == null || token.isEmpty) {
+      state = AuthState();
+      return;
     }
+
+    state = state.copyWith(
+      isLoading: true,
+      token: token,
+      user: _buildCachedUser(prefs),
+    );
+
+    final fetched = await fetchMe();
+    if (fetched) {
+      // Register token on fresh app start if already logged in AND notifications are enabled
+      final notificationsEnabled =
+          prefs.getBool('notifications_enabled') ?? true;
+      if (notificationsEnabled) {
+        await FirebaseService.registerDeviceToken(ApiClient().dio);
+      }
+    }
+
+    state = state.copyWith(isLoading: false);
   }
 
   Future<bool> login(String email, String password) async {
@@ -90,49 +124,42 @@ class AuthController extends StateNotifier<AuthState> {
 
     try {
       final tokens = await _loginUseCase(email, password);
-      
+
       if (tokens != null && tokens.containsKey('accessToken')) {
         final prefs = await SharedPreferences.getInstance();
         final token = tokens['accessToken']!;
         await prefs.setString('auth_token', token);
-        
+
         if (tokens.containsKey('refreshToken')) {
           await prefs.setString('refresh_token', tokens['refreshToken']!);
         }
         // Fetch user details after login, BEFORE triggering success state
         // This ensures that user role is available for navigation routing
-        await fetchMe(); 
+        await fetchMe();
 
         // Register FCM Token for push notifications if enabled
-        final notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+        final notificationsEnabled =
+            prefs.getBool('notifications_enabled') ?? true;
         if (notificationsEnabled) {
           await FirebaseService.registerDeviceToken(ApiClient().dio);
         }
 
-        state = state.copyWith(
-          isLoading: false, 
-          token: token, 
-          isSuccess: true
-        );
-        
+        state = state.copyWith(isLoading: false, token: token, isSuccess: true);
+
         return true;
       } else {
         state = state.copyWith(
-          isLoading: false, 
-          error: 'Login failed. Invalid token received.'
-        );
+            isLoading: false, error: 'Login failed. Invalid token received.');
         return false;
       }
     } catch (e) {
       state = state.copyWith(
-        isLoading: false, 
-        error: e.toString().replaceAll('Exception: ', '')
-      );
+          isLoading: false, error: e.toString().replaceAll('Exception: ', ''));
       return false;
     }
   }
 
-  Future<void> fetchMe() async {
+  Future<bool> fetchMe() async {
     try {
       final user = await _getMeUseCase();
       if (user != null) {
@@ -143,9 +170,27 @@ class AuthController extends StateNotifier<AuthState> {
         if (user.id != null) await prefs.setString('user_id', user.id!);
         if (user.role != null) await prefs.setString('user_role', user.role!);
         if (user.name != null) await prefs.setString('user_name', user.name!);
+        if (user.email != null)
+          await prefs.setString('user_email', user.email!);
+
+        return true;
       }
+
+      return false;
     } catch (e) {
-      print('Failed to fetch user data: $e');
+      final errMsg = e.toString().replaceAll('Exception: ', '');
+      if (errMsg.contains('jwt expired') ||
+          errMsg.contains('Unauthorized') ||
+          errMsg.contains('Insufficient permissions') ||
+          errMsg.contains('No auth token')) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('auth_token');
+        await prefs.remove('refresh_token');
+        state = AuthState();
+      } else {
+        print('Failed to fetch user data: $errMsg');
+      }
+      return false;
     }
   }
 
@@ -159,7 +204,8 @@ class AuthController extends StateNotifier<AuthState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('auth_token');
       await prefs.remove('refresh_token');
-      state = AuthState(); 
+      await prefs.remove('user_email');
+      state = AuthState();
     }
   }
 
@@ -173,14 +219,18 @@ class AuthController extends StateNotifier<AuthState> {
       final updated = await _updateProfileUseCase(updatedUser);
       if (updated != null) {
         state = state.copyWith(isLoading: false, user: updated);
-        
+
         // Persist local user info update
         final prefs = await SharedPreferences.getInstance();
-        if (updated.name != null) await prefs.setString('user_name', updated.name!);
-        
+        if (updated.name != null)
+          await prefs.setString('user_name', updated.name!);
+        if (updated.email != null)
+          await prefs.setString('user_email', updated.email!);
+
         return true;
       } else {
-        state = state.copyWith(isLoading: false, error: 'Failed to update profile');
+        state =
+            state.copyWith(isLoading: false, error: 'Failed to update profile');
         return false;
       }
     } catch (e) {
@@ -193,7 +243,8 @@ class AuthController extends StateNotifier<AuthState> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('auth_token');
         await prefs.remove('refresh_token');
-        state = AuthState(error: 'Sesi telah berakhir. Silakan login kembali.');
+        await prefs.remove('user_email');
+        state = AuthState(error: 'Session .');
         return false;
       }
       state = state.copyWith(isLoading: false, error: errMsg);
@@ -203,7 +254,8 @@ class AuthController extends StateNotifier<AuthState> {
 }
 
 /// Provider untuk AuthController
-final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
+final authControllerProvider =
+    StateNotifierProvider<AuthController, AuthState>((ref) {
   return AuthController(
     loginUseCase: ref.watch(loginUseCaseProvider),
     getMeUseCase: ref.watch(getMeUseCaseProvider),
