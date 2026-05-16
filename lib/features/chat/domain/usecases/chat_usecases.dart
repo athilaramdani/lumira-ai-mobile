@@ -64,3 +64,11 @@ class GetRoomsUseCase {
 
   Future<List<dynamic>> call() => repository.getRooms();
 }
+
+/// Streams the last message text for a given room from Firestore.
+class GetLastMessageUseCase {
+  final ChatRepository repository;
+  GetLastMessageUseCase(this.repository);
+
+  Stream<String?> call(String roomId) => repository.getLastMessage(roomId);
+}
