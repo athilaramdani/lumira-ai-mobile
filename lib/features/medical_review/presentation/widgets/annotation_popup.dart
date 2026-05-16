@@ -155,11 +155,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
 
           const SizedBox(height: 12),
 
-          // ── GradCAM opacity slider (both modes) ───────────────────────────
-          if (widget.isReadOnly) ...[
-            _buildGradcamSlider(),
-            const SizedBox(height: 12),
-          ],
+
 
           // ── Drawing tools (write mode only) ───────────────────────────────
           if (!widget.isReadOnly) ...[
@@ -184,6 +180,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
               min: 0.1,
               max: 1.0,
             ),
+
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -336,7 +333,7 @@ class _AnnotationPopupState extends State<AnnotationPopup> {
   }
 
   Widget _buildBaseImage() {
-    if (!_isNormalized) {
+    if (_isNormalized) {
       // Apply normalized effect to the actual raw backend image
       final hasRaw =
           widget.rawImagePath != null && widget.rawImagePath!.isNotEmpty;
