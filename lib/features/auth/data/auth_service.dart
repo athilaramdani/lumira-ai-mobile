@@ -72,6 +72,62 @@ class AuthService implements AuthRepository {
     }
   }
 
+  Future<UserModel?> updateProfile(UserModel user) async {
+    try {
+      final String endpoint;
+      final Map<String, dynamic> payload;
+
+      if (user.id != null && user.id!.startsWith('PAS-')) {
+        // Patient: PUT /patients/:id — PatientRequest schema: name, email, phone, address
+        endpoint = '${ApiConstants.patients}/${user.id}';
+        payload = {};
+        if (user.name != null && user.name!.isNotEmpty) payload['name'] = user.name;
+        if (user.email != null && user.email!.isNotEmpty) payload['email'] = user.email;
+        if (user.phone != null && user.phone!.isNotEmpty) payload['phone'] = user.phone;
+        if (user.address != null && user.address!.isNotEmpty) payload['address'] = user.address;
+      } else {
+        // Doctor: PUT /doctors/:id — UserRequest schema: name, email, status
+        endpoint = '/doctors/${user.id}';
+        payload = {};
+        if (user.name != null && user.name!.isNotEmpty) payload['name'] = user.name;
+        if (user.email != null && user.email!.isNotEmpty) payload['email'] = user.email;
+      }
+
+      print('[UpdateProfile] PUT $endpoint');
+      print('[UpdateProfile] Payload: $payload');
+
+      final response = await _dio.put(endpoint, data: payload);
+
+      print('[UpdateProfile] Response status: ${response.statusCode}');
+      print('[UpdateProfile] Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final data = response.data['data'] ?? response.data;
+        if (data is Map<String, dynamic>) {
+          return UserModel.fromJson(data);
+        }
+        // Return merged model since backend may not return full profile
+        return user;
+      }
+      return null;
+    } on DioException catch (e) {
+      print('[UpdateProfile] DioException: status=${e.response?.statusCode}, data=${e.response?.data}');
+
+      final statusCode = e.response?.statusCode;
+      final serverMessage = e.response?.data?['message'];
+
+      // Backend returns 500 for some auth errors instead of 401
+      if (statusCode == 500) {
+        throw Exception(serverMessage ?? 'Server error (500). Coba logout dan login ulang.');
+      }
+
+      final errorMessage = serverMessage ?? e.message ?? 'Failed to update profile.';
+      throw Exception(errorMessage);
+    } catch (e) {
+      throw Exception('An unexpected error occurred: $e');
+    }
+  }
+
   Future<void> logout() async {
     try {
       await _dio.post(ApiConstants.logout);

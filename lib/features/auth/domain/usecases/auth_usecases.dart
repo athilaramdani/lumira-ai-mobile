@@ -27,3 +27,13 @@ class LogoutUseCase {
     return await repository.logout();
   }
 }
+
+class UpdateProfileUseCase {
+  final AuthRepository repository;
+  UpdateProfileUseCase(this.repository);
+
+  Future<UserModel?> call(UserModel user) async {
+    return await repository.updateProfile(user);
+  }
+}
+
