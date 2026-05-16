@@ -64,7 +64,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
           patientId: id,
           patientName: name,
           imageUrl: user?.imageUrl,
-          imagePath: user?.role == 'doctor' ? AppAssets.doctor : AppAssets.dummyProfile,
+          imagePath: user?.role == 'doctor' ? AppAssets.doctorProfile : AppAssets.patientProfile,
         ),
         
         const SizedBox(height: 10),

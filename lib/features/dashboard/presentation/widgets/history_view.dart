@@ -316,7 +316,10 @@ class HistoryView extends ConsumerWidget {
             CircleAvatar(
               radius: 28,
               backgroundColor: const Color(0xFF40B4FF).withOpacity(0.1),
-              backgroundImage: const AssetImage(AppAssets.doctor),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Image.asset(AppAssets.doctorProfile, fit: BoxFit.contain),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(

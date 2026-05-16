@@ -95,9 +95,12 @@ class PatientCard extends StatelessWidget {
                   border: Border.all(color: Colors.blue.shade100, width: 2),
                 ),
                 child: ClipOval(
-                  child: Image.asset(
-                    AppAssets.dummyProfile,
-                    fit: BoxFit.cover,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Image.asset(
+                      AppAssets.patientProfile,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
