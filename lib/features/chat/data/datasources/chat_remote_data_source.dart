@@ -29,6 +29,9 @@ abstract class ChatRemoteDataSource {
 
   /// Get the list of chat rooms from the backend.
   Future<List<dynamic>> getRooms();
+
+  /// Stream the last message text of a given room from Firestore.
+  Stream<String?> getLastMessage(String roomId);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -56,6 +59,19 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         .map((snapshot) => snapshot.docs
             .map((doc) => ChatMessageModel.fromFirestore(doc))
             .toList());
+  }
+
+  @override
+  Stream<String?> getLastMessage(String roomId) {
+    return _messages(roomId)
+        .orderBy('created_at', descending: true)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+          if (snapshot.docs.isEmpty) return null;
+          final data = snapshot.docs.first.data() as Map<String, dynamic>?;
+          return data?['message'] as String?;
+        });
   }
 
   // ─── Send message ─────────────────────────────────────────────────────

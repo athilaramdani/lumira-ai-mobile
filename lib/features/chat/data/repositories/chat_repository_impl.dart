@@ -48,4 +48,8 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Future<List<dynamic>> getRooms() => remoteDataSource.getRooms();
+
+  @override
+  Stream<String?> getLastMessage(String roomId) =>
+      remoteDataSource.getLastMessage(roomId);
 }
