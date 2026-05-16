@@ -19,9 +19,13 @@ class AiResultInterpretationPage extends StatelessWidget {
         titleSpacing: 0,
         title: Row(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 18,
-              backgroundImage: AssetImage(AppAssets.doctor), // Using existing asset mimicking MedGemma
+              backgroundColor: const Color(0xFFE3F2FD),
+              child: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: Image.asset(AppAssets.doctorProfile, fit: BoxFit.contain), // Using existing asset mimicking MedGemma
+              ),
             ),
             const SizedBox(width: 12),
             Column(
