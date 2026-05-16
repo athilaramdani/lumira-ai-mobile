@@ -48,3 +48,4 @@ app.*.map.json
 .env
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+C:\tmp\chrome_dev/
