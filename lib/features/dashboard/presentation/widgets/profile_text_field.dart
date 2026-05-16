@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 
 class ProfileTextField extends StatelessWidget {
@@ -6,6 +7,12 @@ class ProfileTextField extends StatelessWidget {
   final String initialValue;
   final bool isMultiLine;
   final ValueChanged<String>? onChanged;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final String? hintText;
+  final String? helperText;
+  final bool readOnly;
+  final VoidCallback? onTap;
 
   const ProfileTextField({
     super.key,
@@ -13,6 +20,12 @@ class ProfileTextField extends StatelessWidget {
     required this.initialValue,
     this.isMultiLine = false,
     this.onChanged,
+    this.keyboardType,
+    this.inputFormatters,
+    this.hintText,
+    this.helperText,
+    this.readOnly = false,
+    this.onTap,
   });
 
   @override
@@ -35,6 +48,10 @@ class ProfileTextField extends StatelessWidget {
           initialValue: initialValue,
           onChanged: onChanged,
           maxLines: isMultiLine ? 3 : 1,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          readOnly: readOnly,
+          onTap: onTap,
           style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 14,
@@ -61,6 +78,13 @@ class ProfileTextField extends StatelessWidget {
                 color: AppColors.primary,
                 width: 1,
               ),
+            ),
+            hintText: hintText,
+            helperText: helperText,
+            helperStyle: const TextStyle(
+              color: Colors.grey,
+              fontSize: 10,
+              fontStyle: FontStyle.italic,
             ),
           ),
         ),
