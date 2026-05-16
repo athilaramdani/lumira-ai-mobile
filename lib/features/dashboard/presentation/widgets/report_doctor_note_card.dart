@@ -78,9 +78,13 @@ class ReportDoctorNoteCard extends StatelessWidget {
           const SizedBox(height: 24),
           Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 16,
-                backgroundImage: AssetImage(AppAssets.doctor),
+                backgroundColor: const Color(0xFFE3F2FD),
+                child: Padding(
+                  padding: const EdgeInsets.all(2.0),
+                  child: Image.asset(AppAssets.doctorProfile, fit: BoxFit.contain),
+                ),
               ),
               const SizedBox(width: 12),
               Column(

@@ -325,9 +325,13 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
       titleSpacing: 0,
       title: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 18,
-            backgroundImage: AssetImage(AppAssets.doctor),
+            backgroundColor: const Color(0xFFE3F2FD),
+            child: Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: Image.asset(AppAssets.doctorProfile, fit: BoxFit.contain),
+            ),
           ),
           const SizedBox(width: 12),
           Column(
