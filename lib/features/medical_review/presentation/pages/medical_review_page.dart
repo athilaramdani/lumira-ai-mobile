@@ -7,7 +7,7 @@ import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/doctor_header.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/doctor_bottom_nav_bar.dart';
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/medical_image_card.dart';
-import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/review_controls.dart';
+
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/patient_info_card.dart';
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/classification_results_card.dart';
 import 'package:lumira_ai_mobile/features/medical_review/presentation/widgets/doctor_diagnosis_card.dart';
@@ -66,7 +66,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
   
   // Annotation Tool States
   List<DrawingStroke> _strokes = [];
-  VisualMode _visualMode = VisualMode.raw;
+
 
   @override
   void initState() {
@@ -219,11 +219,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
   Widget _buildImageSection() {
     return Column(
       children: [
-        ReviewControls(
-          visualMode: _visualMode,
-          onVisualModeChanged: (mode) => setState(() => _visualMode = mode),
-        ),
-        const SizedBox(height: 12),
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Row(
@@ -247,7 +243,7 @@ class _MedicalReviewPageState extends ConsumerState<MedicalReviewPage> {
                     label: 'RAW VIEW',
                     imagePath: widget.rawImage ?? AppAssets.rawPixels,
                     isNetwork: widget.rawImage != null,
-                    isNormalized: _visualMode == VisualMode.normalized,
+
                     overlay: CustomPaint(
                       size: Size.infinite,
                       painter: DrawingPainter(
