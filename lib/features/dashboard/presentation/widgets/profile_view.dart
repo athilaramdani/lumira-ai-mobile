@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lumira_ai_mobile/core/network/api_client.dart';
+import 'package:lumira_ai_mobile/core/services/firebase_service.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/profile_header.dart';
@@ -22,6 +25,19 @@ class ProfileView extends ConsumerStatefulWidget {
 
 class _ProfileViewState extends ConsumerState<ProfileView> {
   bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPreference();
+  }
+
+  Future<void> _loadNotificationPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,28 +142,26 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
               ProfileSettingRow(
                 icon: Icons.notifications_none,
                 title: 'Notifications',
+                showDivider: false, // Make this the last item
                 trailing: Switch(
                   value: _notificationsEnabled,
-                  onChanged: (bool value) {
+                  onChanged: (bool value) async {
                     setState(() {
                       _notificationsEnabled = value;
                     });
+                    
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('notifications_enabled', value);
+                    
+                    final dio = ApiClient().dio;
+                    if (value) {
+                      await FirebaseService.registerDeviceToken(dio);
+                    } else {
+                      await FirebaseService.removeDeviceToken(dio);
+                    }
                   },
                   activeColor: AppColors.primary,
                 ),
-              ),
-              const ProfileSettingRow(
-                icon: Icons.language,
-                title: 'Language',
-                trailing: Text(
-                  'English (US)',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                showDivider: false,
               ),
             ],
           ),
