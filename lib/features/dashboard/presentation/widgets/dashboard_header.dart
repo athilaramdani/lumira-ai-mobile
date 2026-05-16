@@ -12,7 +12,7 @@ class DashboardHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
     final userName = authState.user?.name ?? 'User';
-    final imagePath = authState.user?.role == 'doctor' ? AppAssets.doctor : AppAssets.dummyProfile;
+    final imagePath = authState.user?.role == 'doctor' ? AppAssets.doctorProfile : AppAssets.patientProfile;
 
     return Container(
       decoration: const BoxDecoration(
@@ -117,7 +117,10 @@ class DashboardHeader extends ConsumerWidget {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: AppColors.primaryLight,
-                  backgroundImage: AssetImage(imagePath),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2.0),
+                    child: Image.asset(imagePath, fit: BoxFit.contain),
+                  ),
                 ),
               ],
             ),

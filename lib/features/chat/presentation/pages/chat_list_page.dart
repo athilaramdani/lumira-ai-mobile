@@ -27,7 +27,7 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
     final chatRoomsAsync = ref.watch(chatRoomsProvider);
     final authState = ref.watch(authControllerProvider);
     final isPatientRole = authState.user?.role == 'patient';
-    final counterpartImage = isPatientRole ? AppAssets.doctor : AppAssets.dummyProfile;
+    final counterpartImage = isPatientRole ? AppAssets.doctorProfile : AppAssets.patientProfile;
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -186,9 +186,12 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
                   border: Border.all(color: Colors.blue.shade100, width: 2),
                 ),
                 child: ClipOval(
-                  child: Image.asset(
-                    imagePath,
-                    fit: BoxFit.cover,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Image.asset(
+                      imagePath,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),

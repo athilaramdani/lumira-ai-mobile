@@ -106,7 +106,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
     
     final authState = ref.watch(authControllerProvider);
     final isPatientRole = authState.user?.role == 'patient';
-    final counterpartImage = isPatientRole ? AppAssets.doctor : AppAssets.dummyProfile;
+    final counterpartImage = isPatientRole ? AppAssets.doctorProfile : AppAssets.patientProfile;
 
     // Auto-scroll when new messages arrive
     ref.listen(chatControllerProvider(chatParams), (previous, next) {
@@ -223,9 +223,12 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
               border: Border.all(color: Colors.blue.shade100, width: 2),
             ),
             child: ClipOval(
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
