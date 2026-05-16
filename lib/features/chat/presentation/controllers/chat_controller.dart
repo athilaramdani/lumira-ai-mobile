@@ -32,12 +32,22 @@ final mintFirebaseTokenUseCaseProvider =
 final getRoomsUseCaseProvider =
     Provider((ref) => GetRoomsUseCase(ref.watch(chatRepositoryProvider)));
 
+final getLastMessageUseCaseProvider =
+    Provider((ref) => GetLastMessageUseCase(ref.watch(chatRepositoryProvider)));
+
 final unreadChatCountProvider = StateProvider<int>((ref) => 0);
 
 /// Rooms list provider — used by ChatListPage to show rooms from backend API.
 final chatRoomsProvider = FutureProvider<List<dynamic>>((ref) async {
   final useCase = ref.watch(getRoomsUseCaseProvider);
   return useCase();
+});
+
+/// Streams the last message text for a specific Firestore room.
+final lastMessageProvider =
+    StreamProvider.family<String?, String>((ref, roomId) {
+  final useCase = ref.watch(getLastMessageUseCaseProvider);
+  return useCase(roomId);
 });
 
 // ─── State ────────────────────────────────────────────────────────────────────
