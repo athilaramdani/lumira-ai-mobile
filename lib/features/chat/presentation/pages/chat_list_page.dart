@@ -101,7 +101,7 @@ class _ChatListPageState extends ConsumerState<ChatListPage> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         child: SizedBox(
                           height: MediaQuery.of(context).size.height * 0.6,
-                          child: const Center(child: Text('Belum ada percakapan chat.')),
+                          child: const Center(child: Text('No chat conversations yet.')),
                         ),
                       );
                     }

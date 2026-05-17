@@ -48,8 +48,8 @@ class FirebaseService {
   }
 
   static void showLocalNotification(RemoteMessage message) {
-    final title = message.notification?.title ?? message.data['title'] ?? 'Pesan Baru';
-    final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'Anda menerima pesan baru.';
+    final title = message.notification?.title ?? message.data['title'] ?? 'New Message';
+    final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'You received a new message.';
 
     const androidDetails = AndroidNotificationDetails(
       'chat_channel',
@@ -101,8 +101,8 @@ class FirebaseService {
         debugPrint('>>>>>>>>>> [FCM] FOREGROUND MESSAGE EVENT FIRED! <<<<<<<<<<');
         debugPrint('[FCM] Foreground data: ${message.data}');
         
-        final title = message.notification?.title ?? message.data['title'] ?? 'Pesan Baru';
-        final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'Anda menerima pesan baru.';
+        final title = message.notification?.title ?? message.data['title'] ?? 'New Message';
+        final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'You received a new message.';
 
         // Tampilkan SnackBar di dalam aplikasi (Foreground UI)
         globalMessengerKey.currentState?.showSnackBar(
@@ -114,7 +114,7 @@ class FirebaseService {
             duration: const Duration(seconds: 4),
             backgroundColor: Colors.blue.shade800,
             action: SnackBarAction(
-              label: 'Lihat',
+              label: 'View',
               textColor: Colors.white,
               onPressed: () {
                 // Bisa diarahkan ke halaman chat
