@@ -26,7 +26,7 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Anda telah berhasil keluar dari akun.'),
+          content: Text('You have successfully logged out.'),
           backgroundColor: Color(0xFF4CAF50),
           behavior: SnackBarBehavior.floating,
         ),
@@ -55,7 +55,7 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
           child: _isLoading
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 32),
-                  child: CreativeMedicalLoading(text: 'Keluar dari akun...'),
+                  child: CreativeMedicalLoading(text: 'Logging out...'),
                 )
               : _buildDialogContent(),
         ),
@@ -83,7 +83,7 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
         ),
         const SizedBox(height: 24),
         const Text(
-          'Keluar Dari Akun?',
+          'Logout from Account?',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -101,9 +101,9 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
               height: 1.5,
             ),
             children: [
-              TextSpan(text: 'Apakah Anda yakin ingin keluar dari\n'),
+              TextSpan(text: 'Are you sure you want to log out from your\n'),
               TextSpan(
-                text: 'akun Lumira',
+                text: 'Lumira account',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -129,7 +129,7 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
               elevation: 0,
             ),
             child: const Text(
-                    'Keluar',
+                    'Logout',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -154,7 +154,7 @@ class _LogoutDialogState extends ConsumerState<LogoutDialog> {
               elevation: 0,
             ),
             child: const Text(
-              'Batal',
+              'Cancel',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

@@ -59,18 +59,8 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
   final TextEditingController _imageUrlController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  bool _isAiTyping = false;
   bool _showImageInput = false;
   late AnimationController _progressController;
-
-  /// Riwayat pesan di UI
-  final List<MedgemmaMessage> _messages = [];
-
-  /// Riwayat yang dikirim ke API (hanya role+content, tanpa metadata UI)
-  final List<ChatHistoryEntry> _apiHistory = [];
-
-  /// Service yang menghit endpoint Cloudflare
-  final ConsultationService _consultationService = ConsultationService();
 
   /// Image URL aktif (dari parameter awal atau input manual)
   String? _activeImageUrl;
@@ -99,9 +89,23 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
     if (widget.sessionId != null) {
       _currentSessionId = widget.sessionId!;
       final session = ref.read(medgemmaHistoryProvider.notifier).getSession(_currentSessionId);
-      if (session != null) {
-        _messages.addAll(session.messages);
-        _apiHistory.addAll(session.apiHistory);
+      if (session != null && session.isTyping) {
+        final elapsed = DateTime.now().difference(session.lastUpdated);
+        final elapsedSeconds = elapsed.inSeconds.toDouble();
+        
+        double startValue = (elapsedSeconds / 15.0) * 0.95;
+        if (startValue > 0.95) startValue = 0.95;
+        
+        _progressController.value = startValue;
+        
+        if (startValue < 0.95) {
+          final remainingSeconds = 15 - elapsedSeconds.toInt();
+          _progressController.animateTo(
+            0.95,
+            duration: Duration(seconds: remainingSeconds > 0 ? remainingSeconds : 1),
+            curve: Curves.easeOutCubic,
+          );
+        }
       }
     } else {
       _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -147,29 +151,25 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    // Ambil image URL yang sedang aktif
     final imageUrl = _imageUrlController.text.trim().isNotEmpty
         ? _imageUrlController.text.trim()
         : _activeImageUrl;
 
-    // ── Deteksi & perbarui topik dari pesan user ──
     final topicInMessage = _extractTopic(text);
     if (topicInMessage != null) {
       _detectedMedicalTopic = topicInMessage;
     }
 
-    // ── Perkaya prompt jika ini pesan follow-up yang ambigu ──
-    // Kondisi: ada riwayat percakapan, tapi pesan sekarang tidak punya
-    // kata kunci medis eksplisit → sisipkan konteks topik sesi.
+    final session = ref.read(medgemmaHistoryProvider.notifier).getSession(_currentSessionId);
+    final apiHistory = session?.apiHistory ?? [];
+
     String enrichedPrompt = text;
-    if (_apiHistory.isNotEmpty &&
+    if (apiHistory.isNotEmpty &&
         !_hasExplicitMedicalContext(text) &&
         _detectedMedicalTopic != null) {
-      enrichedPrompt =
-          '[Konteks: pertanyaan ini masih dalam topik $_detectedMedicalTopic] $text';
+      enrichedPrompt = '[Konteks: pertanyaan ini masih dalam topik $_detectedMedicalTopic] $text';
     }
 
-    // Tambah pesan user ke UI (tampilkan teks asli, bukan yang sudah diperkaya)
     final userMsg = MedgemmaMessage(
       text: text,
       isUser: true,
@@ -178,9 +178,7 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
     );
 
     setState(() {
-      _messages.add(userMsg);
       _textController.clear();
-      _isAiTyping = true;
       _showImageInput = false;
       _progressController.reset();
       _progressController.animateTo(
@@ -189,72 +187,16 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
         curve: Curves.easeOutCubic,
       );
     });
+    
     _scrollToBottom();
-    _saveSession();
 
-    // Simpan ke riwayat API (untuk dikirim sebagai chat_history pada request berikutnya)
-    // Catatan: pesan yang BARU saja diketik tidak dimasukkan ke chat_history –
-    // ia menjadi user_prompt. Chat history berisi pesan-pesan SEBELUMNYA.
-    final historySnapshot = List<ChatHistoryEntry>.from(_apiHistory);
-
-    try {
-      final result = await _consultationService.sendConsultation(
-        user: 'Patient',
-        userPrompt: enrichedPrompt, // kirim versi yang sudah diperkaya
-        chatHistory: historySnapshot,
-        imageUrl: imageUrl,
-      );
-
-      // Setelah berhasil, masukkan giliran user (teks asli) + AI ke history
-      // Simpan teks asli di history agar model melihat percakapan yang natural
-      _apiHistory.add(ChatHistoryEntry(role: 'user', content: text));
-      _apiHistory.add(ChatHistoryEntry(role: 'assistant', content: result.response));
-
-      if (mounted) {
-        setState(() {
-          _isAiTyping = false;
-          _messages.add(MedgemmaMessage(
-            text: result.response,
-            isUser: false,
-            time: _getCurrentTime(),
-          ));
-        });
-        _scrollToBottom();
-        _saveSession();
-      }
-    } catch (e) {
-      // Masukkan pesan user ke history meski gagal agar konteks tidak hilang
-      _apiHistory.add(ChatHistoryEntry(role: 'user', content: text));
-
-      if (mounted) {
-        setState(() {
-          _isAiTyping = false;
-          _messages.add(MedgemmaMessage(
-            text: 'Maaf, terjadi kesalahan: $e',
-            isUser: false,
-            time: _getCurrentTime(),
-          ));
-        });
-        _scrollToBottom();
-        _saveSession();
-      }
-    }
-  }
-
-  void _saveSession() {
-    if (_messages.isEmpty) return;
-    final title = _messages.first.text;
-    final snippet = _messages.last.text;
-
-    final session = MedgemmaChatSession(
-      id: _currentSessionId,
-      title: title,
-      snippet: snippet,
-      messages: List.from(_messages),
-      apiHistory: List.from(_apiHistory),
-      lastUpdated: DateTime.now(),
+    // Call background service
+    ref.read(medgemmaHistoryProvider.notifier).sendMessage(
+      sessionId: _currentSessionId,
+      userMsg: userMsg,
+      enrichedPrompt: enrichedPrompt,
+      imageUrl: imageUrl,
     );
-    ref.read(medgemmaHistoryProvider.notifier).addOrUpdateSession(session);
   }
 
   // -------------------------------------------------------------------------
@@ -283,32 +225,57 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
   // -------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    final sessions = ref.watch(medgemmaHistoryProvider);
+    final session = sessions.firstWhere(
+      (s) => s.id == _currentSessionId,
+      orElse: () => MedgemmaChatSession(
+        id: _currentSessionId,
+        title: '',
+        snippet: '',
+        messages: [],
+        apiHistory: [],
+        lastUpdated: DateTime.now(),
+      ),
+    );
+
+    final messages = session.messages;
+    final isAiTyping = session.isTyping;
+
+    // Listen to changes to scroll
+    ref.listen(medgemmaHistoryProvider, (prev, next) {
+      final prevSession = prev?.where((s) => s.id == _currentSessionId).firstOrNull;
+      final nextSession = next.where((s) => s.id == _currentSessionId).firstOrNull;
+      if (prevSession != null && nextSession != null) {
+        if (nextSession.messages.length > prevSession.messages.length || nextSession.isTyping != prevSession.isTyping) {
+          _scrollToBottom();
+        }
+      }
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F5),
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          // Banner jika ada gambar aktif
           if (_activeImageUrl != null || _imageUrlController.text.isNotEmpty)
             _buildActiveImageBanner(),
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              itemCount: _messages.length + (_isAiTyping ? 1 : 0) + 1,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              itemCount: messages.length + (isAiTyping ? 1 : 0) + 1,
               itemBuilder: (context, index) {
                 if (index == 0) return _buildDateSeparator();
                 final msgIndex = index - 1;
-                if (msgIndex == _messages.length && _isAiTyping) {
+                if (msgIndex == messages.length && isAiTyping) {
                   return _buildTypingIndicator();
                 }
-                return _buildMessageBubble(_messages[msgIndex]);
+                return _buildMessageBubble(messages[msgIndex]);
               },
             ),
           ),
           if (_showImageInput) _buildImageUrlInput(),
-          _buildBottomInputArea(),
+          _buildBottomInputArea(isAiTyping),
         ],
       ),
     );
@@ -656,7 +623,7 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
     );
   }
 
-  Widget _buildBottomInputArea() {
+  Widget _buildBottomInputArea(bool isAiTyping) {
     return Container(
       color: Colors.white,
       child: SafeArea(
@@ -695,7 +662,7 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
               ),
               child: TextField(
                 controller: _textController,
-                onSubmitted: (_) => _sendMessage(),
+                onSubmitted: (_) => isAiTyping ? null : _sendMessage(),
                 decoration: const InputDecoration(
                   hintText: 'Ceritakan gejala Anda...',
                   hintStyle: TextStyle(color: Colors.grey),
@@ -708,7 +675,7 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
           ),
           const SizedBox(width: 12),
           ElevatedButton(
-            onPressed: _isAiTyping ? null : _sendMessage,
+            onPressed: isAiTyping ? null : _sendMessage,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF40B4FF),
               disabledBackgroundColor: Colors.grey[300],
@@ -721,7 +688,7 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
               elevation: 0,
             ),
             child: const Text(
-              'Kirim',
+              'Send',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
