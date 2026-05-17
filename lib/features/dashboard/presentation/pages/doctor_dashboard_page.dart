@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -62,15 +63,25 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
   String _searchQuery = '';
   final ScrollController _scrollController = ScrollController();
   bool _isRefreshing = false;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(patientsControllerProvider.notifier).fetchPatients();
-      ref.read(statisticsControllerProvider.notifier).fetchDoctorStats();
+      _silentRefresh();
     });
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _silentRefresh();
+    });
+  }
+
+  Future<void> _silentRefresh() async {
+    await ref.read(patientsControllerProvider.notifier).fetchPatients(silentRefresh: true);
+    await ref.read(statisticsControllerProvider.notifier).fetchDoctorStats();
+    ref.invalidate(chatRoomsProvider);
   }
 
   void _onScroll() {
@@ -91,6 +102,7 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -197,15 +209,18 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
               child: RefreshIndicator(
                 onRefresh: _triggerRefresh,
                 color: AppColors.primary,
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: currentIndex == 1
-                      ? const ProfileView()
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
+                child: currentIndex == 1
+                    ? SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: const ProfileView(),
+                      )
+                    : CustomScrollView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
                               child: Text(
                                 'Hi, ${doctorName.startsWith('Dr') ? doctorName : 'Dr. $doctorName'}!',
@@ -216,9 +231,11 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
                                 ),
                               ),
                             ),
-                            _buildStatCards(),
-                            const SizedBox(height: 10),
-                            CustomSearchBar(
+                          ),
+                          SliverToBoxAdapter(child: _buildStatCards()),
+                          const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                          SliverToBoxAdapter(
+                            child: CustomSearchBar(
                               hintText: 'Search Patient...',
                               onChanged: (value) {
                                 setState(() {
@@ -226,20 +243,21 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
                                 });
                               },
                             ),
-                            const SizedBox(height: 10),
-                            _buildPatientList(),
-                            if (ref.watch(patientsControllerProvider).isLoadingMore)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Center(
-                                  child: CreativeMedicalLoading(text: 'Loading more...'),
-                                ),
-                              )
-                            else
-                              const SizedBox(height: 20),
-                          ],
-                        ),
-                ),
+                          ),
+                          const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                          _buildPatientSliverList(),
+                          SliverToBoxAdapter(
+                            child: ref.watch(patientsControllerProvider).isLoadingMore
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 20),
+                                    child: Center(
+                                      child: CreativeMedicalLoading(text: 'Loading more...'),
+                                    ),
+                                  )
+                                : const SizedBox(height: 20),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ],
@@ -261,6 +279,7 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
         currentIndex: currentIndex,
         onTap: (index) {
           ref.read(bottomNavIndexProvider.notifier).state = index;
+          _silentRefresh(); // Refresh when changing tabs
         },
       ),
       floatingActionButton: currentIndex == 0 ? _buildChatFAB() : null,
@@ -273,23 +292,11 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
     final statisticsState = ref.watch(statisticsControllerProvider);
     final doctorStats = statisticsState.doctorStats;
 
-    int waitingCount = 0;
-    int doneCount = 0;
-    int totalImages = 0;
-    int needAttention = 0;
-
-    if (doctorStats != null) {
-      waitingCount = doctorStats['pending'] as int? ?? 0;
-      doneCount = doctorStats['completed'] as int? ?? 0;
-      totalImages = doctorStats['total'] as int? ?? 0;
-      needAttention = doctorStats['attention'] as int? ?? 0;
-    } else {
-      final mapped = _allMappedPatients;
-      waitingCount = mapped.where((p) => p.filterCategory == 'waiting').length;
-      doneCount = mapped.where((p) => p.filterCategory == 'done').length;
-      totalImages = mapped.length;
-      needAttention = mapped.where((p) => p.aiResult == AIResult.unknown).length;
-    }
+    final mapped = _allMappedPatients;
+    int waitingCount = mapped.where((p) => p.filterCategory == 'waiting').length;
+    int doneCount = mapped.where((p) => p.filterCategory == 'done').length;
+    int totalImages = mapped.length;
+    int needAttention = mapped.where((p) => p.filterCategory == 'attention').length;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
@@ -354,24 +361,45 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
     );
   }
 
-  Widget _buildPatientList() {
+  Widget _buildPatientSliverList() {
     final patients = _filteredPatients;
-    return Column(
-      children: patients.map((p) => PatientCard(
-        patientName: p.name,
-        patientId: p.id,
-        recordId: p.recordId,
-        aiResult: p.aiResult,
-        imageStatus: p.imageStatus,
-        actionLabel: p.actionLabel,
-        actionColor: p.actionColor,
-        phone: p.phone,
-        rawImage: p.rawImage,
-        gradCamImage: p.gradCamImage,
-        initialDoctorDiagnosis: p.initialDoctorDiagnosis,
-        initialDoctorNote: p.initialDoctorNote,
-        initialAgreement: p.initialAgreement,
-      )).toList(),
+    
+    if (patients.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: Center(
+            child: Text(
+              'No patients found in this category.',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final p = patients[index];
+          return PatientCard(
+            patientName: p.name,
+            patientId: p.id,
+            recordId: p.recordId,
+            aiResult: p.aiResult,
+            imageStatus: p.imageStatus,
+            actionLabel: p.actionLabel,
+            actionColor: p.actionColor,
+            phone: p.phone,
+            rawImage: p.rawImage,
+            gradCamImage: p.gradCamImage,
+            initialDoctorDiagnosis: p.initialDoctorDiagnosis,
+            initialDoctorNote: p.initialDoctorNote,
+            initialAgreement: p.initialAgreement,
+          );
+        },
+        childCount: patients.length,
+      ),
     );
   }
 
@@ -388,7 +416,7 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ChatListPage()),
-              );
+              ).then((_) => _silentRefresh()); // Auto-refresh when back from chat
             },
             backgroundColor: AppColors.btnChat,
             elevation: 4,
