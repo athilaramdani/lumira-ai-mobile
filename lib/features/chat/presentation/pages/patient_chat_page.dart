@@ -480,7 +480,7 @@ class _PatientChatPageState extends ConsumerState<PatientChatPage> {
                 borderRadius: BorderRadius.circular(24),
               ),
               child: const Text(
-                'Kirim',
+                'Send',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

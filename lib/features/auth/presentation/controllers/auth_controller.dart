@@ -6,6 +6,10 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auth_usecases.dart';
 import '../../../../core/services/firebase_service.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../chat/presentation/controllers/chat_controller.dart';
+import '../../../patients/presentation/controllers/patients_controller.dart';
+import '../../../statistics/presentation/controllers/statistics_controller.dart';
+import '../../../ai_chatbot/presentation/controllers/medgemma_history_controller.dart';
 
 /// Provider untuk AuthRepository
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -60,16 +64,19 @@ class AuthController extends StateNotifier<AuthState> {
   final GetMeUseCase _getMeUseCase;
   final LogoutUseCase _logoutUseCase;
   final UpdateProfileUseCase _updateProfileUseCase;
+  final Ref _ref;
 
   AuthController({
     required LoginUseCase loginUseCase,
     required GetMeUseCase getMeUseCase,
     required LogoutUseCase logoutUseCase,
     required UpdateProfileUseCase updateProfileUseCase,
+    required Ref ref,
   })  : _loginUseCase = loginUseCase,
         _getMeUseCase = getMeUseCase,
         _logoutUseCase = logoutUseCase,
         _updateProfileUseCase = updateProfileUseCase,
+        _ref = ref,
         super(AuthState(isLoading: true)) {
     _init();
   }
@@ -173,6 +180,9 @@ class AuthController extends StateNotifier<AuthState> {
         if (user.email != null)
           await prefs.setString('user_email', user.email!);
 
+        // Invalidate history provider so it rebuilds with the new user_id
+        _ref.invalidate(medgemmaHistoryProvider);
+
         return true;
       }
 
@@ -186,12 +196,28 @@ class AuthController extends StateNotifier<AuthState> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('auth_token');
         await prefs.remove('refresh_token');
-        state = AuthState();
+        await prefs.remove('user_email');
+        await prefs.remove('user_id');
+        await prefs.remove('user_role');
+        await prefs.remove('user_name');
+        _clearAllData();
       } else {
         print('Failed to fetch user data: $errMsg');
       }
       return false;
     }
+  }
+
+  void _clearAllData() async {
+    _ref.invalidate(chatRoomsProvider);
+    _ref.invalidate(chatControllerProvider);
+    _ref.invalidate(unreadChatCountProvider);
+    _ref.invalidate(patientsControllerProvider);
+    _ref.invalidate(patientDetailProvider);
+    _ref.invalidate(statisticsControllerProvider);
+    _ref.invalidate(medgemmaHistoryProvider);
+    
+    state = AuthState();
   }
 
   Future<void> logout() async {
@@ -205,7 +231,11 @@ class AuthController extends StateNotifier<AuthState> {
       await prefs.remove('auth_token');
       await prefs.remove('refresh_token');
       await prefs.remove('user_email');
-      state = AuthState();
+      await prefs.remove('user_id');
+      await prefs.remove('user_role');
+      await prefs.remove('user_name');
+      
+      _clearAllData();
     }
   }
 
@@ -244,7 +274,7 @@ class AuthController extends StateNotifier<AuthState> {
         await prefs.remove('auth_token');
         await prefs.remove('refresh_token');
         await prefs.remove('user_email');
-        state = AuthState(error: 'Session .');
+        _clearAllData();
         return false;
       }
       state = state.copyWith(isLoading: false, error: errMsg);
@@ -261,5 +291,6 @@ final authControllerProvider =
     getMeUseCase: ref.watch(getMeUseCaseProvider),
     logoutUseCase: ref.watch(logoutUseCaseProvider),
     updateProfileUseCase: ref.watch(updateProfileUseCaseProvider),
+    ref: ref,
   );
 });

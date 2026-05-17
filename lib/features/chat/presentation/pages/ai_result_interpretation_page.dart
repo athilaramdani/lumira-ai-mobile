@@ -326,7 +326,7 @@ class AiResultInterpretationPage extends StatelessWidget {
               elevation: 0,
             ),
             child: const Text(
-              'Kirim',
+              'Send',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
