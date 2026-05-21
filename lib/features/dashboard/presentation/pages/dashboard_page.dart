@@ -68,24 +68,41 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ),
       body: _currentNavIndex == 2
           ? const ChatListPage(showBackButton: false)
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  if (_currentNavIndex != 4)
-                    const DashboardHeader(),
+          : RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                final authState = ref.read(authControllerProvider);
+                final userId = authState.user?.id;
+                if (userId != null) {
+                  try {
+                    ref.invalidate(patientDetailProvider(userId));
+                    ref.invalidate(chatRoomsProvider);
+                    await ref.read(patientDetailProvider(userId).future);
+                  } catch (e) {
+                    debugPrint('Refresh error: $e');
+                  }
+                }
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    if (_currentNavIndex != 4)
+                      const DashboardHeader(),
 
-                  if (_currentNavIndex == 0)
-                    _buildStatsContent(),
+                    if (_currentNavIndex == 0)
+                      _buildStatsContent(),
 
-                  if (_currentNavIndex == 1)
-                    const ConsultAiView(),
+                    if (_currentNavIndex == 1)
+                      const ConsultAiView(),
 
-                  if (_currentNavIndex == 3)
-                    const HistoryView(),
+                    if (_currentNavIndex == 3)
+                      const HistoryView(),
 
-                  if (_currentNavIndex == 4)
-                    const ProfileView(),
-                ],
+                    if (_currentNavIndex == 4)
+                      const ProfileView(),
+                  ],
+                ),
               ),
             ),
     );
