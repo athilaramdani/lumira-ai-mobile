@@ -47,9 +47,9 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
               final docId = record.doctor!['id']?.toString() ?? '';
               if (docId.isNotEmpty && !uniqueDoctors.containsKey(docId)) {
                 uniqueDoctors[docId] = {
-                  'name': record.doctor!['name'] ?? 'Dokter',
+                  'name': record.doctor!['name'] ?? 'Doctor',
                   'id': docId,
-                  'specialty': 'Spesialis',
+                  'specialty': 'Specialist',
                   'isOnline': record.doctor!['status']?.toString().toLowerCase() == 'active',
                   'medicalRecordId': record.id ?? '',
                 };
@@ -76,9 +76,9 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
                 final docId = record.doctor!['id']?.toString() ?? '';
                 if (docId.isNotEmpty && !uniqueDoctors.containsKey(docId)) {
                   uniqueDoctors[docId] = {
-                    'name': record.doctor!['name'] ?? 'Dokter',
+                    'name': record.doctor!['name'] ?? 'Doctor',
                     'id': docId,
-                    'specialty': 'Spesialis',
+                    'specialty': 'Specialist',
                     'isOnline': record.doctor!['status']?.toString().toLowerCase() == 'active',
                     'medicalRecordId': record.id ?? '',
                   };
@@ -153,7 +153,7 @@ class _DoctorChatListPageState extends ConsumerState<DoctorChatListPage> {
                       ),
                     )
                   : filteredDoctors.isEmpty
-                      ? const Center(child: Text('Belum ada dokter yang menangani Anda.'))
+                      ? const Center(child: Text('No doctors assigned to you yet.'))
                       : ListView.builder(
                           itemCount: filteredDoctors.length,
                           itemBuilder: (context, index) {

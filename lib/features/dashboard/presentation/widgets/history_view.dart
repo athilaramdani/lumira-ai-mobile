@@ -21,6 +21,7 @@ class HistoryView extends ConsumerWidget {
         : const AsyncValue.loading();
 
     return patientAsync.when(
+      skipLoadingOnReload: true,
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('Error: $error')),
       data: (patient) {
@@ -37,7 +38,7 @@ class HistoryView extends ConsumerWidget {
                   result: record.resultLabel?.toString().toUpperCase() ?? 'UNKNOWN',
                   icon: Icons.medical_services_outlined,
                   doctorId: record.doctor != null ? record.doctor!['id']?.toString() ?? '' : '',
-                  doctorName: record.doctor != null ? record.doctor!['name']?.toString() ?? 'Dokter' : 'Dokter',
+                  doctorName: record.doctor != null ? record.doctor!['name']?.toString() ?? 'Doctor' : 'Doctor',
                   medicalRecordId: record.id?.toString() ?? '',
                   record: record,
                   patient: patient,
@@ -58,7 +59,7 @@ class HistoryView extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: const [
                   Text(
-                    'Riwayat Diagnosis',
+                    'Diagnosis History',
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 18,
@@ -413,7 +414,7 @@ class HistoryView extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Konsultasi dengan Dokter',
+                    'Consultation with Doctor',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
