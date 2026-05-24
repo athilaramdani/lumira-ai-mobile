@@ -38,14 +38,14 @@ final getLastMessageUseCaseProvider =
 final unreadChatCountProvider = StateProvider<int>((ref) => 0);
 
 /// Rooms list provider — used by ChatListPage to show rooms from backend API.
-final chatRoomsProvider = FutureProvider<List<dynamic>>((ref) async {
+final chatRoomsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
   final useCase = ref.watch(getRoomsUseCaseProvider);
   return useCase();
 });
 
 /// Streams the last message text for a specific Firestore room.
 final lastMessageProvider =
-    StreamProvider.family<String?, String>((ref, roomId) {
+    StreamProvider.autoDispose.family<String?, String>((ref, roomId) {
   final useCase = ref.watch(getLastMessageUseCaseProvider);
   return useCase(roomId);
 });
@@ -194,7 +194,7 @@ class ChatController extends StateNotifier<ChatState> {
 /// Family param is a Dart Record with named fields.
 /// - For DOCTOR: patientId = patient's ID, medicalRecordId = patient's latest record ID
 /// - For PATIENT: patientId = own user ID,  medicalRecordId = own medical record ID
-final chatControllerProvider = StateNotifierProvider.family<
+final chatControllerProvider = StateNotifierProvider.autoDispose.family<
     ChatController, ChatState, ({String otherUserId, String medicalRecordId})>(
   (ref, params) {
     final controller = ChatController(

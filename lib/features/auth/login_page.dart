@@ -79,21 +79,21 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Email wajib diisi';
+      return 'Email is required';
     }
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(value)) {
-      return 'Format email tidak valid';
+      return 'Invalid email format';
     }
     return null;
   }
 
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Password wajib diisi';
+      return 'Password is required';
     }
     if (value.length < 8) {
-      return 'Password minimal 8 karakter';
+      return 'Password must be at least 8 characters';
     }
     return null;
   }

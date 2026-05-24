@@ -31,7 +31,7 @@ class SaveChangesDialog extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Simpan Perubahan',
+              'Save Changes',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -41,7 +41,8 @@ class SaveChangesDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Apakah anda ingin menyimpan\nperubahan Profile?',
+              'Do you want to save
+Profile changes?',
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,
@@ -66,7 +67,7 @@ class SaveChangesDialog extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: const Text(
-                  'Simpan',
+                  'Save',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

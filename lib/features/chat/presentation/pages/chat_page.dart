@@ -100,7 +100,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
     });
 
-    final doctorLabel = widget.doctorName ?? 'Dokter';
+    final doctorLabel = widget.doctorName ?? 'Doctor';
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -260,7 +260,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  'Dokter',
+                  'Doctor',
                   style: TextStyle(
                     color: Colors.blue.shade700,
                     fontSize: 11,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/features/dashboard/presentation/widgets/dashboard_header.dart';
@@ -14,6 +15,7 @@ import 'package:lumira_ai_mobile/features/chat/presentation/pages/chat_list_page
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../patients/presentation/controllers/patients_controller.dart';
+import '../../../chat/presentation/controllers/chat_controller.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -26,6 +28,30 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   int _selectedTabIndex = 0; // 0: All, 1: Pending/In Review, 2: Done
   int _currentNavIndex = 0;
   String _searchQuery = '';
+  Timer? _pollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _silentRefresh();
+    });
+  }
+
+  Future<void> _silentRefresh() async {
+    final authState = ref.read(authControllerProvider);
+    final userId = authState.user?.id;
+    if (userId != null) {
+      ref.invalidate(patientDetailProvider(userId));
+    }
+    ref.invalidate(chatRoomsProvider);
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,28 +63,46 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           setState(() {
             _currentNavIndex = index;
           });
+          _silentRefresh(); // Refresh when changing tabs
         },
       ),
       body: _currentNavIndex == 2
           ? const ChatListPage(showBackButton: false)
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  if (_currentNavIndex != 4)
-                    const DashboardHeader(),
+          : RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                final authState = ref.read(authControllerProvider);
+                final userId = authState.user?.id;
+                if (userId != null) {
+                  try {
+                    ref.invalidate(patientDetailProvider(userId));
+                    ref.invalidate(chatRoomsProvider);
+                    await ref.read(patientDetailProvider(userId).future);
+                  } catch (e) {
+                    debugPrint('Refresh error: $e');
+                  }
+                }
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    if (_currentNavIndex != 4)
+                      const DashboardHeader(),
 
-                  if (_currentNavIndex == 0)
-                    _buildStatsContent(),
+                    if (_currentNavIndex == 0)
+                      _buildStatsContent(),
 
-                  if (_currentNavIndex == 1)
-                    const ConsultAiView(),
+                    if (_currentNavIndex == 1)
+                      const ConsultAiView(),
 
-                  if (_currentNavIndex == 3)
-                    const HistoryView(),
+                    if (_currentNavIndex == 3)
+                      const HistoryView(),
 
-                  if (_currentNavIndex == 4)
-                    const ProfileView(),
-                ],
+                    if (_currentNavIndex == 4)
+                      const ProfileView(),
+                  ],
+                ),
               ),
             ),
     );
@@ -74,6 +118,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         : const AsyncValue<dynamic>.loading();
 
     return patientAsync.when(
+      skipLoadingOnReload: true,
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 60),
         child: Center(child: CircularProgressIndicator()),
@@ -141,14 +186,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
             // Filter by selected tab
             if (_selectedTabIndex == 1 && scanStatus == ScanStatus.done) {
-              return const SizedBox.shrink();
+              return null;
             }
             if (_selectedTabIndex == 2 && scanStatus != ScanStatus.done) {
-              return const SizedBox.shrink();
+              return null;
             }
 
             final doctorId = record.doctor?['id']?.toString() ?? '';
-            final doctorName = record.doctor?['name']?.toString() ?? 'Dokter';
+            final doctorName = record.doctor?['name']?.toString() ?? 'Doctor';
 
             // Filter by search query
             if (_searchQuery.isNotEmpty) {
@@ -157,7 +202,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               final idMatch = recordId.toLowerCase().contains(query);
               final resultMatch = (record.resultLabel ?? '').toLowerCase().contains(query);
               if (!doctorNameMatch && !idMatch && !resultMatch) {
-                return const SizedBox.shrink();
+                return null;
               }
             }
 
@@ -190,7 +235,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               confidenceScore: confidenceStr,
               noteText: record.doctorNotes,
             );
-          }).whereType<Widget>().toList();
+          }).where((w) => w != null).cast<Widget>().toList();
+          
+          if (dynamicCards.isEmpty) {
+            dynamicCards.add(
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: Text(
+                    'No scan records found in this category.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ),
+            );
+          }
         }
 
         return Column(
