@@ -28,6 +28,27 @@ class PatientModel {
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
+    final records = json['medical_records'] != null
+        ? (json['medical_records'] as List)
+            .map((i) => MedicalRecordModel.fromJson(i))
+            .toList()
+        : <MedicalRecordModel>[];
+
+    // Ambil latestRecord dari field eksplisit jika ada,
+    // atau sort medical_records by uploadedAt descending.
+    MedicalRecordModel? latestRecord;
+    if (json['latestRecord'] != null) {
+      latestRecord = MedicalRecordModel.fromJson(json['latestRecord']);
+    } else if (records.isNotEmpty) {
+      final sorted = [...records]
+        ..sort((a, b) {
+          final dateA = DateTime.tryParse(a.createdAt ?? '') ?? DateTime(0);
+          final dateB = DateTime.tryParse(b.createdAt ?? '') ?? DateTime(0);
+          return dateB.compareTo(dateA);
+        });
+      latestRecord = sorted.first;
+    }
+
     return PatientModel(
       id: json['id']?.toString(),
       name: json['name'],
@@ -38,12 +59,8 @@ class PatientModel {
       medicalHistory: json['medicalHistory'],
       contactNumber: json['contactNumber'] ?? json['phone'],
       address: json['address'],
-      medicalRecords: json['medical_records'] != null
-          ? (json['medical_records'] as List).map((i) => MedicalRecordModel.fromJson(i)).toList()
-          : null,
-      latestRecord: json['latestRecord'] != null
-          ? MedicalRecordModel.fromJson(json['latestRecord'])
-          : null,
+      medicalRecords: records.isNotEmpty ? records : null,
+      latestRecord: latestRecord,
     );
   }
 
