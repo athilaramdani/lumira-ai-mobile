@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_model.dart';
 
 /// Service untuk berkomunikasi dengan AI consultation endpoint.
@@ -7,8 +8,16 @@ import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_mo
 /// Auth      : Bearer XiueX_Lumira+MedWTelU  (static key – bukan token user)
 /// Body      : { user, user_prompt, chat_history, image? }
 class ConsultationService {
-  static const String _baseUrl =
-      'https://tablet-pending-byte-julian.trycloudflare.com';
+  /// URL diambil dari .env MEDGEMMA_BASE_URL agar mudah diganti tanpa rebuild.
+  /// Pastikan URL tidak berakhir dengan '/'
+  static String get _baseUrl {
+    final url = dotenv.env['MEDGEMMA_BASE_URL'] ?? '';
+    if (url.isEmpty) {
+      throw Exception('MEDGEMMA_BASE_URL is not defined in .env file');
+    }
+    return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+  }
+
   static const String _apiToken = 'XiueX_Lumira+MedWTelU';
   static const String _endpoint = '/consultations';
 
