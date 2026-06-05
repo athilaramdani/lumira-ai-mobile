@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io';
 import '../../main.dart';
@@ -105,6 +106,7 @@ class FirebaseService {
         final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'You received a new message.';
 
         // Tampilkan SnackBar di dalam aplikasi (Foreground UI)
+        // Tidak perlu local notification karena app sedang terbuka
         globalMessengerKey.currentState?.showSnackBar(
           SnackBar(
             content: Text('$title\n$body'),
@@ -122,11 +124,29 @@ class FirebaseService {
             ),
           ),
         );
-
-        // Opsional: Tetap tampilkan heads-up notification lewat system
-        showLocalNotification(message);
+        // NOTE: showLocalNotification tidak dipanggil di sini
+        // agar tidak dobel dengan SnackBar
       });
       debugPrint('[FCM] onMessage listener registered!');
+
+      // Token refresh listener — update backend jika FCM token berubah
+      // (misalnya setelah reinstall app atau token expired)
+      messaging.onTokenRefresh.listen((newToken) async {
+        debugPrint('[FCM] Token refreshed: $newToken');
+        // Re-register token baru ke backend
+        // Dio diambil fresh dari import agar tidak circular dependency
+        try {
+          final dio = Dio(BaseOptions(
+            baseUrl: dotenv.env['BASE_URL'] ?? '',
+          ));
+          await dio.post('/chat/device-tokens', data: {
+            'fcmToken': newToken,
+            'platform': Platform.operatingSystem,
+          });
+        } catch (e) {
+          debugPrint('[FCM] Failed to re-register refreshed token: $e');
+        }
+      });
 
       // Background notification tap
       FirebaseMessaging.onMessageOpenedApp.listen((message) {

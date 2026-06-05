@@ -8,8 +8,10 @@ import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_mo
 /// Auth      : Bearer XiueX_Lumira+MedWTelU  (static key – bukan token user)
 /// Body      : { user, user_prompt, chat_history, image? }
 class ConsultationService {
+  /// Fallback URL jika MEDGEMMA_BASE_URL tidak diset di .env
   static const String _defaultBaseUrl =
       'https://tablet-pending-byte-julian.trycloudflare.com';
+
   static const String _apiToken = 'XiueX_Lumira+MedWTelU';
   static const String _endpoint = '/consultations';
 
