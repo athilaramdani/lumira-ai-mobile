@@ -43,7 +43,7 @@ class MedicalRecordsRemoteDataSourceImpl implements MedicalRecordsRemoteDataSour
     
     FormData formData = FormData.fromMap({
       "patient_id": patientId,
-      "image": await MultipartFile.fromFile(image.path, filename: fileName),
+      "file": await MultipartFile.fromFile(image.path, filename: fileName),
     });
 
     final response = await _dio.post(
