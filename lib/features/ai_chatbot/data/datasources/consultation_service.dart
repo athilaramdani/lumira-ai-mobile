@@ -3,20 +3,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_model.dart';
 
 /// Service untuk berkomunikasi dengan AI consultation endpoint.
-/// 
+///
 /// Endpoint  : POST https://tablet-pending-byte-julian.trycloudflare.com/consultations
 /// Auth      : Bearer XiueX_Lumira+MedWTelU  (static key – bukan token user)
 /// Body      : { user, user_prompt, chat_history, image? }
 class ConsultationService {
-  /// URL diambil dari .env MEDGEMMA_BASE_URL agar mudah diganti tanpa rebuild.
-  /// Pastikan URL tidak berakhir dengan '/'
-  static String get _baseUrl {
-    final url = dotenv.env['MEDGEMMA_BASE_URL'] ?? '';
-    if (url.isEmpty) {
-      throw Exception('MEDGEMMA_BASE_URL is not defined in .env file');
-    }
-    return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
-  }
+  /// Fallback URL jika MEDGEMMA_BASE_URL tidak diset di .env
+  static const String _defaultBaseUrl =
+      'https://tablet-pending-byte-julian.trycloudflare.com';
 
   static const String _apiToken = 'XiueX_Lumira+MedWTelU';
   static const String _endpoint = '/consultations';
@@ -24,9 +18,15 @@ class ConsultationService {
   late final Dio _dio;
 
   ConsultationService() {
+    final baseUrl = dotenv.env['MEDGEMMA_BASE_URL']?.trim().isNotEmpty == true
+        ? dotenv.env['MEDGEMMA_BASE_URL']!.trim()
+        : dotenv.env['BASE_URL']?.trim().isNotEmpty == true
+            ? dotenv.env['BASE_URL']!.trim()
+            : _defaultBaseUrl;
+
     _dio = Dio(
       BaseOptions(
-        baseUrl: _baseUrl,
+        baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 60),
         receiveTimeout: const Duration(seconds: 120),
         headers: {
@@ -101,7 +101,8 @@ class ConsultationService {
 
       // ── Bersihkan teks dari proses berpikir AI (thought process) ──
       // Hapus blok <unused94>thought ... <unused94> atau </unused94> atau jika tidak ditutup (hingga akhir)
-      aiText = aiText.replaceAll(RegExp(r'<unused94>thought[\s\S]*?(?:</unused94>|<unused94>|$)'), '');
+      aiText = aiText.replaceAll(
+          RegExp(r'<unused94>thought[\s\S]*?(?:</unused94>|<unused94>|$)'), '');
       // Hapus blok <think> ... </think> jika ada
       aiText = aiText.replaceAll(RegExp(r'<think>[\s\S]*?(?:</think>|$)'), '');
       // Hapus sisa-sisa spasi berlebih
@@ -117,7 +118,8 @@ class ConsultationService {
       if (aiText.isEmpty) {
         // Jika teks kosong karena seluruh respons adalah proses berpikir yang terpotong,
         // berikan fallback pesan yang ramah alih-alih melempar Exception.
-        aiText = 'Mohon maaf, pemrosesan jawaban terpotong karena batas sistem. Silakan ajukan pertanyaan yang lebih singkat atau buat sesi obrolan baru.';
+        aiText =
+            'Mohon maaf, pemrosesan jawaban terpotong karena batas sistem. Silakan ajukan pertanyaan yang lebih singkat atau buat sesi obrolan baru.';
       }
 
       return ConsultationResponse(
@@ -130,14 +132,17 @@ class ConsultationService {
       final serverMessage = _extractErrorMessage(e.response?.data);
 
       if (statusCode == 401 || statusCode == 403) {
-        throw Exception('Autentikasi AI gagal (HTTP $statusCode). Hubungi administrator.');
+        throw Exception(
+            'Autentikasi AI gagal (HTTP $statusCode). Hubungi administrator.');
       } else if (statusCode == 422) {
         throw Exception('Data tidak valid: $serverMessage');
       } else if (statusCode != null && statusCode >= 500) {
-        throw Exception('Server AI sedang bermasalah (HTTP $statusCode). Coba lagi nanti.');
+        throw Exception(
+            'Server AI sedang bermasalah (HTTP $statusCode). Coba lagi nanti.');
       } else if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
-        throw Exception('Koneksi ke server AI timeout. Periksa koneksi internet Anda.');
+        throw Exception(
+            'Koneksi ke server AI timeout. Periksa koneksi internet Anda.');
       } else {
         throw Exception('Gagal menghubungi AI: ${e.message}');
       }
@@ -179,7 +184,8 @@ class ConsultationService {
       // Baris kosong selalu dipertahankan (untuk format paragraf)
       if (normalized.isEmpty) {
         result.add(line);
-        prevNormalized = null; // reset agar baris berikut tidak dianggap duplikat baris kosong
+        prevNormalized =
+            null; // reset agar baris berikut tidak dianggap duplikat baris kosong
         continue;
       }
 
