@@ -28,6 +28,7 @@ class PatientModel {
   });
 
   factory PatientModel.fromJson(Map<String, dynamic> json) {
+
     final records = json['medical_records'] != null
         ? (json['medical_records'] as List)
             .map((i) => MedicalRecordModel.fromJson(i))
@@ -49,6 +50,7 @@ class PatientModel {
       latestRecord = sorted.first;
     }
 
+
     return PatientModel(
       id: json['id']?.toString(),
       name: json['name'],
@@ -59,8 +61,12 @@ class PatientModel {
       medicalHistory: json['medicalHistory'],
       contactNumber: json['contactNumber'] ?? json['phone'],
       address: json['address'],
+
       medicalRecords: records.isNotEmpty ? records : null,
       latestRecord: latestRecord,
+
+
+
     );
   }
 
