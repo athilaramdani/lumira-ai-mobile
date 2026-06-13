@@ -44,6 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Desktop platform directories
+/linux/
+/macos/
+/windows/
+
 # Sensitive files — do NOT commit
 .env
 android/app/google-services.json
