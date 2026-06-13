@@ -50,8 +50,7 @@ class PatientModel {
       latestRecord = sorted.first;
     }
 
-=======
->>>>>>> 7af254d6945701f5dc50b287da6651b89fbd9922
+
     return PatientModel(
       id: json['id']?.toString(),
       name: json['name'],
@@ -65,14 +64,9 @@ class PatientModel {
 
       medicalRecords: records.isNotEmpty ? records : null,
       latestRecord: latestRecord,
-=======
-      medicalRecords: json['medical_records'] != null
-          ? (json['medical_records'] as List).map((i) => MedicalRecordModel.fromJson(i)).toList()
-          : null,
-      latestRecord: json['latestRecord'] != null
-          ? MedicalRecordModel.fromJson(json['latestRecord'])
-          : null,
->>>>>>> 7af254d6945701f5dc50b287da6651b89fbd9922
+
+
+
     );
   }
 
