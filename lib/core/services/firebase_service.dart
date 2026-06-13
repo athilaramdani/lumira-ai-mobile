@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
+<<<<<<< HEAD
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+=======
+>>>>>>> 7af254d6945701f5dc50b287da6651b89fbd9922
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io';
 import '../../main.dart';
@@ -106,7 +109,10 @@ class FirebaseService {
         final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? 'You received a new message.';
 
         // Tampilkan SnackBar di dalam aplikasi (Foreground UI)
+<<<<<<< HEAD
         // Tidak perlu local notification karena app sedang terbuka
+=======
+>>>>>>> 7af254d6945701f5dc50b287da6651b89fbd9922
         globalMessengerKey.currentState?.showSnackBar(
           SnackBar(
             content: Text('$title\n$body'),
@@ -124,6 +130,7 @@ class FirebaseService {
             ),
           ),
         );
+<<<<<<< HEAD
         // NOTE: showLocalNotification tidak dipanggil di sini
         // agar tidak dobel dengan SnackBar
       });
@@ -148,6 +155,14 @@ class FirebaseService {
         }
       });
 
+=======
+
+        // Opsional: Tetap tampilkan heads-up notification lewat system
+        showLocalNotification(message);
+      });
+      debugPrint('[FCM] onMessage listener registered!');
+
+>>>>>>> 7af254d6945701f5dc50b287da6651b89fbd9922
       // Background notification tap
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         debugPrint('[FCM] Tapped: ${message.data}');

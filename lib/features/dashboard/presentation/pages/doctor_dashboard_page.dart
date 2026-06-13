@@ -128,7 +128,11 @@ class _DoctorDashboardPageState extends ConsumerState<DoctorDashboardPage> {
         hasReview = true;
       }
       
+<<<<<<< HEAD
       final isDone = status == 'REVIEWED' || hasReview;
+=======
+      final isDone = status == 'DONE' || status == 'VALIDATED' || hasReview;
+>>>>>>> 7af254d6945701f5dc50b287da6651b89fbd9922
       
       final aiDiagnosisRaw = latestRecord?.resultLabel?.toLowerCase() ?? '';
       AIResult aiResultVar = AIResult.unknown;
