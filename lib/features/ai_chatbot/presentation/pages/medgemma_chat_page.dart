@@ -58,7 +58,6 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage> {
   final TextEditingController _imageUrlController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  bool _showImageInput = false;
 
   /// Image URL aktif (dari parameter awal atau input manual)
   String? _activeImageUrl;
@@ -226,7 +225,6 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage> {
       _selectedImageFile = null;
       _selectedImageBytes = null;
       _isUploadingToCloudinary = false;
-      _showImageInput = false;
       _activeImageUrl = null;
       _imageUrlController.clear();
     });
@@ -325,7 +323,6 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage> {
           ),
           if (_activeImageUrl != null || _imageUrlController.text.isNotEmpty || _selectedImageFile != null)
             _buildImageInputPreview(),
-          if (_showImageInput) _buildImageUrlInput(),
           _buildBottomInputArea(isBusy),
         ],
       ),
@@ -371,22 +368,7 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage> {
           ),
         ],
       ),
-      actions: [
-        // Tombol untuk attach image URL (manual)
-        IconButton(
-          tooltip: 'Lampirkan gambar scan',
-          icon: Icon(
-            Icons.image_outlined,
-            color: _activeImageUrl != null ? const Color(0xFF40B4FF) : Colors.grey,
-          ),
-          onPressed: () {
-            setState(() {
-              _showImageInput = !_showImageInput;
-            });
-          },
-        ),
-        const SizedBox(width: 8),
-      ],
+      actions: const [],
     );
   }
 
@@ -458,52 +440,6 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage> {
     );
   }
 
-  // Input URL gambar yang muncul di atas bottom bar
-  Widget _buildImageUrlInput() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Row(
-        children: [
-          const Icon(Icons.link, color: Colors.grey, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: _imageUrlController,
-              decoration: const InputDecoration(
-                hintText: 'Paste URL gambar scan / X-ray...',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 10),
-              ),
-              style: const TextStyle(fontSize: 13),
-              keyboardType: TextInputType.url,
-              onSubmitted: (_) {
-                setState(() {
-                  _activeImageUrl = _imageUrlController.text.trim();
-                  _selectedImageFile = null;
-                  _showImageInput = false;
-                });
-              },
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _activeImageUrl = _imageUrlController.text.trim();
-                _selectedImageFile = null;
-                _showImageInput = false;
-              });
-            },
-            child: const Text('OK',
-                style: TextStyle(
-                    color: Color(0xFF40B4FF), fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
 
   // -------------------------------------------------------------------------
   // Widgets
