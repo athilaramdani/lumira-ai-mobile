@@ -1,62 +1,52 @@
-import 'package:dio/dio.dart';
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_model.dart';
 
-/// Service untuk berkomunikasi dengan AI consultation endpoint.
+/// Service untuk berkomunikasi dengan AI consultation endpoint via SSE Streaming.
 ///
-/// Endpoint  : POST https://tablet-pending-byte-julian.trycloudflare.com/consultations
+/// Endpoint  : POST https://<host>/consultations/stream
 /// Auth      : Bearer XiueX_Lumira+MedWTelU  (static key – bukan token user)
 /// Body      : { user, user_prompt, chat_history, image? }
+///
+/// Response  : Server-Sent Events (SSE)
+///   data: {"token": "..."}                        — setiap token yang digenerate
+///   event: done\ndata: {"status":"done","profiling":{...}}  — selesai
+///   event: error\ndata: {"error":"...","message":"..."}     — jika terjadi error
 class ConsultationService {
   /// Fallback URL jika MEDGEMMA_BASE_URL tidak diset di .env
   static const String _defaultBaseUrl =
       'https://tablet-pending-byte-julian.trycloudflare.com';
 
   static const String _apiToken = 'XiueX_Lumira+MedWTelU';
-  static const String _endpoint = '/consultations';
+  static const String _streamEndpoint = '/consultations/stream';
 
-  late final Dio _dio;
-
-  ConsultationService() {
-    final baseUrl = dotenv.env['MEDGEMMA_BASE_URL']?.trim().isNotEmpty == true
+  String get _baseUrl {
+    return dotenv.env['MEDGEMMA_BASE_URL']?.trim().isNotEmpty == true
         ? dotenv.env['MEDGEMMA_BASE_URL']!.trim()
         : dotenv.env['BASE_URL']?.trim().isNotEmpty == true
             ? dotenv.env['BASE_URL']!.trim()
             : _defaultBaseUrl;
-
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 60),
-        receiveTimeout: const Duration(seconds: 120),
-        headers: {
-          'Authorization': 'Bearer $_apiToken',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    // Log request & response saat debug
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => print('[ConsultationService] $obj'),
-    ));
   }
 
-  /// Kirim pesan ke AI dan kembalikan teks balasan.
+  /// Stream token SSE dari AI.
+  ///
+  /// Mengembalikan [Stream<String>] yang menghasilkan teks secara incremental.
+  /// Stream selesai ketika event `done` diterima dari server.
+  /// Stream error ketika event `error` diterima atau koneksi gagal.
   ///
   /// [user]        – role pengirim, misal 'Patient'
   /// [userPrompt]  – pesan terbaru dari user
   /// [chatHistory] – riwayat percakapan sebelumnya
   /// [imageUrl]    – URL gambar scan/X-ray (opsional)
-  Future<ConsultationResponse> sendConsultation({
+  Stream<String> streamConsultation({
     required String user,
     required String userPrompt,
     required List<ChatHistoryEntry> chatHistory,
     String? imageUrl,
-  }) async {
+  }) async* {
     final request = ConsultationRequest(
       user: user,
       userPrompt: userPrompt,
@@ -64,128 +54,164 @@ class ConsultationService {
       image: imageUrl,
     );
 
+    final uri = Uri.parse('$_baseUrl$_streamEndpoint');
+    final body = jsonEncode(request.toJson());
+
+    print('[ConsultationService] 🔄 Streaming request ke: $uri');
+
+    http.Client? client;
     try {
-      // Gunakan dynamic agar tidak ada masalah casting di Flutter Web
-      final response = await _dio.post<dynamic>(
-        _endpoint,
-        data: request.toJson(),
+      client = http.Client();
+      final httpRequest = http.Request('POST', uri);
+      httpRequest.headers.addAll({
+        'Authorization': 'Bearer $_apiToken',
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      });
+      httpRequest.body = body;
+
+      final streamedResponse = await client.send(httpRequest).timeout(
+        const Duration(seconds: 60),
+        onTimeout: () => throw TimeoutException(
+          'Koneksi ke server AI timeout setelah 60 detik.',
+        ),
       );
 
-      final rawData = response.data;
-      if (rawData == null) {
-        throw Exception('Response kosong dari server AI.');
+      if (streamedResponse.statusCode != 200) {
+        final responseBody = await streamedResponse.stream.bytesToString();
+        throw _parseHttpError(streamedResponse.statusCode, responseBody);
       }
 
-      // Konversi ke Map secara eksplisit
-      final Map<String, dynamic> jsonMap = rawData is Map<String, dynamic>
-          ? rawData
-          : Map<String, dynamic>.from(rawData as Map);
+      print('[ConsultationService] ✅ SSE connection established (HTTP ${streamedResponse.statusCode})');
 
-      // ── Ekstrak teks AI secara langsung (tidak melalui fromJson) ──
-      String aiText = '';
+      // Buffer untuk menampung data SSE yang belum lengkap antar chunk
+      final StringBuffer buffer = StringBuffer();
 
-      // Struktur utama: { status, message, data: { consultation_result } }
-      final innerData = jsonMap['data'];
-      if (innerData != null && innerData is Map) {
-        aiText = (innerData['consultation_result'] as String? ?? '').trim();
+      await for (final chunk in streamedResponse.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        buffer.write(chunk);
+        buffer.write('\n');
+
+        final bufferContent = buffer.toString();
+        // SSE message diakhiri dengan dua newline berturut-turut
+        if (bufferContent.endsWith('\n\n') ||
+            bufferContent.contains('\n\n')) {
+          final rawMessages = bufferContent.split('\n\n');
+          // Process semua message yang sudah lengkap, kecuali fragmen terakhir
+          for (int i = 0; i < rawMessages.length - 1; i++) {
+            final msg = rawMessages[i].trim();
+            if (msg.isEmpty) continue;
+
+            final result = _parseSseMessage(msg);
+            if (result == null) continue;
+
+            if (result.isError) {
+              throw Exception(result.errorMessage);
+            }
+            if (result.isDone) {
+              print('[ConsultationService] ✅ Stream selesai. Profiling: ${result.profiling}');
+              return; // Stream selesai
+            }
+            if (result.token != null && result.token!.isNotEmpty) {
+              yield result.token!;
+            }
+          }
+
+          // Simpan fragmen terakhir yang belum lengkap ke buffer baru
+          buffer.clear();
+          if (rawMessages.last.isNotEmpty) {
+            buffer.write(rawMessages.last);
+          }
+        }
       }
-
-      // Fallback jika struktur berbeda
-      if (aiText.isEmpty) {
-        aiText = jsonMap['response'] as String? ??
-            jsonMap['answer'] as String? ??
-            jsonMap['text'] as String? ??
-            jsonMap['result'] as String? ??
-            '';
-      }
-
-      // ── Bersihkan teks dari proses berpikir AI (thought process) ──
-      // Hapus blok <unused94>thought ... <unused94> atau </unused94> atau jika tidak ditutup (hingga akhir)
-      aiText = aiText.replaceAll(
-          RegExp(r'<unused94>thought[\s\S]*?(?:</unused94>|<unused94>|$)'), '');
-      // Hapus blok <think> ... </think> jika ada
-      aiText = aiText.replaceAll(RegExp(r'<think>[\s\S]*?(?:</think>|$)'), '');
-      // Hapus sisa-sisa spasi berlebih
-      aiText = aiText.trim();
-
-      // ── Bersihkan duplikasi baris (model looping) ──
-      // Contoh kasus: "Terapi Adjuvant: ..." muncul 8-12 kali berturut-turut.
-      aiText = _removeDuplicateLines(aiText);
-
-      print('[ConsultationService] ✅ Parsed AI text (${aiText.length} chars): '
-          '${aiText.length > 80 ? '${aiText.substring(0, 80)}...' : aiText}');
-
-      if (aiText.isEmpty) {
-        // Jika teks kosong karena seluruh respons adalah proses berpikir yang terpotong,
-        // berikan fallback pesan yang ramah alih-alih melempar Exception.
-        aiText =
-            'Mohon maaf, pemrosesan jawaban terpotong karena batas sistem. Silakan ajukan pertanyaan yang lebih singkat atau buat sesi obrolan baru.';
-      }
-
-      return ConsultationResponse(
-        response: aiText,
-        sessionId: jsonMap['session_id'] as String?,
-        raw: jsonMap,
-      );
-    } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      final serverMessage = _extractErrorMessage(e.response?.data);
-
-      if (statusCode == 401 || statusCode == 403) {
-        throw Exception(
-            'Autentikasi AI gagal (HTTP $statusCode). Hubungi administrator.');
-      } else if (statusCode == 422) {
-        throw Exception('Data tidak valid: $serverMessage');
-      } else if (statusCode != null && statusCode >= 500) {
-        throw Exception(
-            'Server AI sedang bermasalah (HTTP $statusCode). Coba lagi nanti.');
-      } else if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        throw Exception(
-            'Koneksi ke server AI timeout. Periksa koneksi internet Anda.');
-      } else {
-        throw Exception('Gagal menghubungi AI: ${e.message}');
-      }
+    } on TimeoutException catch (e) {
+      throw Exception('Koneksi ke server AI timeout. Periksa koneksi internet Anda. ($e)');
+    } on Exception {
+      rethrow;
     } catch (e) {
-      throw Exception('Terjadi kesalahan tak terduga: $e');
+      throw Exception('Terjadi kesalahan tak terduga saat streaming: $e');
+    } finally {
+      client?.close();
     }
   }
 
-  String _extractErrorMessage(dynamic responseData) {
-    if (responseData is Map) {
-      return responseData['message']?.toString() ??
-          responseData['detail']?.toString() ??
-          responseData['error']?.toString() ??
-          'Unknown error';
+  /// Parse satu SSE message (bisa berisi satu atau beberapa field: event, data)
+  _SseResult? _parseSseMessage(String rawMessage) {
+    String? eventType;
+    String? dataLine;
+
+    for (final line in rawMessage.split('\n')) {
+      if (line.startsWith('event:')) {
+        eventType = line.substring('event:'.length).trim();
+      } else if (line.startsWith('data:')) {
+        dataLine = line.substring('data:'.length).trim();
+      }
     }
-    return responseData?.toString() ?? 'Unknown error';
+
+    if (dataLine == null || dataLine.isEmpty) return null;
+
+    try {
+      final json = jsonDecode(dataLine) as Map<String, dynamic>;
+
+      if (eventType == 'error') {
+        final message = json['message']?.toString() ?? json['error']?.toString() ?? 'Unknown error';
+        return _SseResult.error(message);
+      }
+
+      if (eventType == 'done') {
+        return _SseResult.done(json['profiling'] as Map<String, dynamic>?);
+      }
+
+      // Token normal (tidak ada event type, atau event type tidak diketahui)
+      final token = json['token'] as String?;
+      if (token != null) {
+        return _SseResult.token(token);
+      }
+    } catch (e) {
+      print('[ConsultationService] ⚠️ Gagal parse SSE data: $dataLine ($e)');
+    }
+    return null;
+  }
+
+  Exception _parseHttpError(int statusCode, String body) {
+    String message = 'Unknown error';
+    try {
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      message = json['message']?.toString() ??
+          json['detail']?.toString() ??
+          json['error']?.toString() ??
+          body;
+    } catch (_) {
+      message = body.isNotEmpty ? body : 'HTTP $statusCode';
+    }
+
+    if (statusCode == 401 || statusCode == 403) {
+      return Exception('Autentikasi AI gagal (HTTP $statusCode). Hubungi administrator.');
+    } else if (statusCode == 422) {
+      return Exception('Data tidak valid: $message');
+    } else if (statusCode >= 500) {
+      return Exception('Server AI sedang bermasalah (HTTP $statusCode). Coba lagi nanti.');
+    }
+    return Exception('Gagal menghubungi AI (HTTP $statusCode): $message');
   }
 
   /// Hapus baris duplikat yang berurutan – gejala model looping.
-  ///
-  /// Algoritma:
-  ///  1. Split teks per baris.
-  ///  2. Normalisasi setiap baris: hapus nomor urut (1. 2. 3.) dan bullet (* - •)
-  ///     dari awal baris agar perbandingan tidak gagal hanya karena nomor berbeda.
-  ///  3. Jika normalized-nya sama dengan baris sebelumnya (case-insensitive),
-  ///     baris ini dianggap duplikat dan dibuang.
-  String _removeDuplicateLines(String text) {
+  String removeDuplicateLines(String text) {
     final lines = text.split('\n');
     final result = <String>[];
     String? prevNormalized;
 
     for (final line in lines) {
-      // Normalisasi: hapus leading bullet/number dan whitespace
       final normalized = line
           .replaceFirst(RegExp(r'^\s*(\d+\.|[-*•])\s*'), '')
           .trim()
           .toLowerCase();
 
-      // Baris kosong selalu dipertahankan (untuk format paragraf)
       if (normalized.isEmpty) {
         result.add(line);
-        prevNormalized =
-            null; // reset agar baris berikut tidak dianggap duplikat baris kosong
+        prevNormalized = null;
         continue;
       }
 
@@ -193,9 +219,44 @@ class ConsultationService {
         result.add(line);
         prevNormalized = normalized;
       }
-      // else: baris duplikat, skip
     }
 
     return result.join('\n');
   }
+
+  /// Bersihkan teks dari thought process dan duplikasi
+  String cleanAiText(String text) {
+    // Hapus blok thought process
+    text = text.replaceAll(
+        RegExp(r'<unused94>thought[\s\S]*?(?:</unused94>|<unused94>|$)'), '');
+    text = text.replaceAll(RegExp(r'<think>[\s\S]*?(?:</think>|$)'), '');
+    text = text.trim();
+
+    // Hapus duplikasi baris
+    text = removeDuplicateLines(text);
+    return text.trim();
+  }
+}
+
+/// Representasi internal satu SSE message yang telah diparsing.
+class _SseResult {
+  final String? token;
+  final bool isDone;
+  final bool isError;
+  final String? errorMessage;
+  final Map<String, dynamic>? profiling;
+
+  const _SseResult._({
+    this.token,
+    this.isDone = false,
+    this.isError = false,
+    this.errorMessage,
+    this.profiling,
+  });
+
+  factory _SseResult.token(String token) => _SseResult._(token: token);
+  factory _SseResult.done(Map<String, dynamic>? profiling) =>
+      _SseResult._(isDone: true, profiling: profiling);
+  factory _SseResult.error(String message) =>
+      _SseResult._(isError: true, errorMessage: message);
 }

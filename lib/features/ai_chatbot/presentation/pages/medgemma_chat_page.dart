@@ -3,11 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:lumira_ai_mobile/core/theme/app_colors.dart';
 import 'package:lumira_ai_mobile/core/constants/app_assets.dart';
 import 'package:lumira_ai_mobile/core/services/cloudinary_service.dart';
-import 'package:lumira_ai_mobile/features/ai_chatbot/data/datasources/consultation_service.dart';
-import 'package:lumira_ai_mobile/features/ai_chatbot/data/models/consultation_model.dart';
 import 'package:lumira_ai_mobile/features/ai_chatbot/presentation/controllers/medgemma_history_controller.dart';
 
 // ---------------------------------------------------------------------------
@@ -56,14 +53,12 @@ class MedgemmaChatPage extends ConsumerStatefulWidget {
   ConsumerState<MedgemmaChatPage> createState() => _MedgemmaChatPageState();
 }
 
-class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
-    with SingleTickerProviderStateMixin {
+class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage> {
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _imageUrlController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   bool _showImageInput = false;
-  late AnimationController _progressController;
 
   /// Image URL aktif (dari parameter awal atau input manual)
   String? _activeImageUrl;
@@ -119,10 +114,6 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
   @override
   void initState() {
     super.initState();
-    _progressController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 15),
-    );
 
     // Jika ada gambar awal dari halaman scan
     if (widget.initialImageUrl != null &&
@@ -133,25 +124,6 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
 
     if (widget.sessionId != null) {
       _currentSessionId = widget.sessionId!;
-      final session = ref.read(medgemmaHistoryProvider.notifier).getSession(_currentSessionId);
-      if (session != null && session.isTyping) {
-        final elapsed = DateTime.now().difference(session.lastUpdated);
-        final elapsedSeconds = elapsed.inSeconds.toDouble();
-
-        double startValue = (elapsedSeconds / 15.0) * 0.95;
-        if (startValue > 0.95) startValue = 0.95;
-
-        _progressController.value = startValue;
-
-        if (startValue < 0.95) {
-          final remainingSeconds = 15 - elapsedSeconds.toInt();
-          _progressController.animateTo(
-            0.95,
-            duration: Duration(seconds: remainingSeconds > 0 ? remainingSeconds : 1),
-            curve: Curves.easeOutCubic,
-          );
-        }
-      }
     } else {
       _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
     }
@@ -159,7 +131,6 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
 
   @override
   void dispose() {
-    _progressController.dispose();
     _textController.dispose();
     _imageUrlController.dispose();
     _scrollController.dispose();
@@ -258,17 +229,11 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
       _showImageInput = false;
       _activeImageUrl = null;
       _imageUrlController.clear();
-      _progressController.reset();
-      _progressController.animateTo(
-        0.95,
-        duration: const Duration(seconds: 15),
-        curve: Curves.easeOutCubic,
-      );
     });
 
     _scrollToBottom();
 
-    // Call background service
+    // Call streaming service
     ref.read(medgemmaHistoryProvider.notifier).sendMessage(
       sessionId: _currentSessionId,
       userMsg: userMsg,
@@ -318,14 +283,18 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
 
     final messages = session.messages;
     final isAiTyping = session.isTyping;
+    final streamingText = session.streamingText;
     final isBusy = isAiTyping || _isUploadingToCloudinary;
 
-    // Listen to changes to scroll
+    // Listen to changes to scroll – termasuk saat streaming token baru masuk
     ref.listen(medgemmaHistoryProvider, (prev, next) {
       final prevSession = prev?.where((s) => s.id == _currentSessionId).firstOrNull;
       final nextSession = next.where((s) => s.id == _currentSessionId).firstOrNull;
       if (prevSession != null && nextSession != null) {
-        if (nextSession.messages.length > prevSession.messages.length || nextSession.isTyping != prevSession.isTyping) {
+        final hasNewMessage = nextSession.messages.length > prevSession.messages.length;
+        final typingChanged = nextSession.isTyping != prevSession.isTyping;
+        final streamingChanged = nextSession.streamingText != prevSession.streamingText;
+        if (hasNewMessage || typingChanged || streamingChanged) {
           _scrollToBottom();
         }
       }
@@ -345,7 +314,10 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
                 if (index == 0) return _buildDateSeparator();
                 final msgIndex = index - 1;
                 if (msgIndex == messages.length && isBusy) {
-                  return _buildTypingIndicator();
+                  return _buildStreamingIndicator(
+                    streamingText: streamingText,
+                    isUploading: _isUploadingToCloudinary,
+                  );
                 }
                 return _buildMessageBubble(messages[msgIndex]);
               },
@@ -660,7 +632,16 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
     );
   }
 
-  Widget _buildTypingIndicator() {
+  /// Bubble streaming real-time: menampilkan teks token yang masuk secara langsung.
+  /// Jika belum ada token sama sekali (awal request / sedang upload), tampilkan
+  /// indikator sederhana dengan animasi titik-titik.
+  Widget _buildStreamingIndicator({
+    required String? streamingText,
+    required bool isUploading,
+  }) {
+    final hasStreamingText = streamingText != null && streamingText.isNotEmpty;
+    final streamingTextValue = streamingText ?? '';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -680,51 +661,94 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
           ),
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFC7E8FF),
+              decoration: const BoxDecoration(
+                color: Color(0xFFC7E8FF),
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
                   bottomLeft: Radius.zero,
-                  bottomRight: const Radius.circular(16),
+                  bottomRight: Radius.circular(16),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _isUploadingToCloudinary
-                        ? '••• UPLOADING IMAGE...'
-                        : '••• ANALYZING CONTEXT...',
-                    style: const TextStyle(
-                      color: Color(0xFF0284C7),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+              child: hasStreamingText
+                  // ── Mode streaming: tampilkan teks real-time ──
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF0284C7),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'GENERATING...',
+                              style: TextStyle(
+                                color: Color(0xFF0284C7),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        MarkdownBody(
+                          data: streamingTextValue,
+                          styleSheet: MarkdownStyleSheet(
+                            p: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                            strong: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        // Cursor berkedip di akhir teks
+                        _BlinkingCursor(),
+                      ],
+                    )
+                  // ── Mode menunggu: belum ada token / sedang upload ──
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isUploading
+                              ? '••• UPLOADING IMAGE...'
+                              : '••• CONNECTING TO AI...',
+                          style: const TextStyle(
+                            color: Color(0xFF0284C7),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            minHeight: 6,
+                            backgroundColor: Colors.white54,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                Color(0xFF0284C7)),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: AnimatedBuilder(
-                      animation: _progressController,
-                      builder: (context, child) {
-                        return LinearProgressIndicator(
-                          value: _isUploadingToCloudinary ? null : _progressController.value,
-                          minHeight: 8,
-                          backgroundColor: Colors.white54,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFF0284C7)),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
@@ -801,6 +825,51 @@ class _MedgemmaChatPageState extends ConsumerState<MedgemmaChatPage>
           ),
         ],
       ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget cursor berkedip yang ditampilkan di akhir teks streaming AI.
+class _BlinkingCursor extends StatefulWidget {
+  const _BlinkingCursor();
+
+  @override
+  State<_BlinkingCursor> createState() => _BlinkingCursorState();
+}
+
+class _BlinkingCursorState extends State<_BlinkingCursor>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: const Text(
+        '▋',
+        style: TextStyle(
+          color: Color(0xFF0284C7),
+          fontSize: 14,
+          height: 1.0,
         ),
       ),
     );
